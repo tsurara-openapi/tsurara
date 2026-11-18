@@ -519,9 +519,18 @@ impl Checker for RustChecker {
     }
 }
 
+/// Held for a whole check of `RustChecker`: a check removes its crate's artifacts at the end, and
+/// they share their names with every other check's (`tsurara-generated`), so a check must not run
+/// while another one builds or runs its tests. Cargo runs test binaries one at a time, so the
+/// threads of one test binary are the only checks that can overlap.
+static RUST_CHECK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 impl RustChecker {
     /// Runs the checker, without the cache of `check`.
     pub fn check_uncached(&self, files: &[(String, String)]) -> Result<(), String> {
+        let _check = RUST_CHECK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if Command::new("cargo").arg("--version").output().is_err() {
             if required("rust") {
                 return Err("cargo is required".into());
@@ -601,8 +610,8 @@ impl RustChecker {
         }
         // The crate's own artifacts are never reused (each crate is in a new directory, so its
         // package id differs), and those of a large definition take gigabytes: remove them, keep
-        // the runtime's and the dependencies'. Cargo's lock on the target directory serializes
-        // this with other checks; one that runs `cargo test` after `cargo clippy` only builds again.
+        // the runtime's and the dependencies'. `RUST_CHECK` keeps other checks from running
+        // meanwhile, since this removes every check's artifacts of the same name.
         let _ = run(&["clean", "--quiet", "-p", "tsurara-generated"]);
         match outputs.iter().find(|o| !o.status.success()) {
             None => {
