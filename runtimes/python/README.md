@@ -101,6 +101,6 @@ client = Client("https://api.test/v1", http=httpx.Client(transport=httpx.MockTra
 
 ```sh
 uv sync --project runtimes/python
-uv run --project runtimes/python pytest
+uv run --directory runtimes/python pytest
 node_modules/.bin/pyright -p runtimes/python
 ```

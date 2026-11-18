@@ -3,7 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
+  # `labeled`: adding the label `corpus` runs the real-world definitions.
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,7 +19,40 @@ concurrency:
 # Actions are pinned by commit, with the version in a comment; Dependabot updates them
 # (.github/dependabot.yml) once a release is 5 days old.
 jobs:
+  # Which jobs a pull request needs, from the files it changes (scripts/ci-scope.mjs): changes to
+  # documentation skip the language checkers, and changes to settings run no job. Pushes to main
+  # and runs by hand run every job.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      all: ${{ steps.scope.outputs.all }}
+      rust: ${{ steps.scope.outputs.rust }}
+      example: ${{ steps.scope.outputs.example }}
+      example-react: ${{ steps.scope.outputs.example-react }}
+      audit: ${{ steps.scope.outputs.audit }}
+    steps:
+      # Two commits: a pull request checks out its merge commit, whose first parent is the base.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      # The runner's Node: the script uses nothing newer than Node 20.
+      - run: node --test scripts/ci-scope.test.mjs
+      - id: scope
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            git diff --name-only HEAD^1 HEAD | node scripts/ci-scope.mjs | tee -a "$GITHUB_OUTPUT"
+          else
+            echo all=true | tee -a "$GITHUB_OUTPUT"
+          fi
+
   rust:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -42,6 +78,8 @@ jobs:
   # One job per language backend: its tests with its checker required (design.md 18.12). A new
   # language adds a matrix entry and installs its toolchain in a step conditioned on it.
   language:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -68,6 +106,8 @@ jobs:
 
   # The Rust runtime (runtimes/rust, its own workspace): its tests, including the conformance vectors.
   rust-runtime:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -88,6 +128,8 @@ jobs:
   # The Go runtime (runtimes/go, standard library only): its tests with the race detector,
   # including the conformance vectors, vet and gofmt.
   go-runtime:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -105,6 +147,8 @@ jobs:
 
   # The Python runtime (runtimes/python): its tests, including the conformance vectors, and pyright.
   python-runtime:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -114,19 +158,65 @@ jobs:
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
       - run: pnpm install --frozen-lockfile
       - run: uv sync --project runtimes/python --locked
-      - run: uv run --project runtimes/python pytest
+      # --directory, not --project: pytest collects from the working directory, and from the
+      # repository root it also picks up the plugin SDK's tests.
+      - run: uv run --directory runtimes/python pytest
       - run: node_modules/.bin/pyright -p runtimes/python
       # The Python plugin SDK (packages/plugin-python).
       - run: uv sync --project packages/plugin-python --locked
-      - run: uv run --project packages/plugin-python pytest
+      - run: uv run --directory packages/plugin-python pytest
       - run: node_modules/.bin/pyright -p packages/plugin-python
 
-  # Real-world definitions and edge cases through tsc (the tsconfig matrix, 7.0.2 and 5.8) and
-  # pyright, gofmt, go vet and go build, and cargo clippy (design.md 13.1). The
-  # corpus is pinned by sha256 in corpus/sources.json.
+  # The edge cases (corpus/edge-cases) through tsc (the tsconfig matrix, 7.0.2 and 5.8), pyright,
+  # gofmt, go vet and go build, and cargo clippy (design.md 13.1), and random definitions.
   corpus:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TSURARA_REQUIRE_CHECKERS: typescript,python,rust,go
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: pnpm install --frozen-lockfile
+      # Checks that passed with the same files and inputs are skipped; the key of each
+      # marker is a hash of everything the check depends on, so the latest cache is safe to reuse.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: target/checker-cache
+          key: checker-cache-edge-cases-${{ github.sha }}
+          restore-keys: checker-cache-edge-cases-
+      - run: uv sync --project runtimes/python --locked
+      - run: cargo test --release -p tsurara-cli --test corpus edge_cases
+      # Random definitions; more cases run weekly in weekly.yml.
+      - run: cargo test --release -p tsurara-cli --test properties
+
+  # The real-world definitions (pinned by sha256 in corpus/sources.json) through the same checkers.
+  # They take most of the time of CI, and only changes to the generator or the runtimes can break
+  # them, so they run on pushes to main, on runs by hand (workflow_dispatch), and on pull requests
+  # with the label `corpus`.
+  #
+  # Two runners: compiling the Rust of the largest definitions takes about 8 GB of memory in one
+  # rustc, and together with the other checks it exhausted the 16 GB of one runner.
+  real-world:
+    needs: changes
+    if: >-
+      needs.changes.outputs.all == 'true' && (github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'corpus'))
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: rust
+            tests: real_world_definitions_compile_as_rust
+          - part: other
+            tests: real_world -- --skip compile_as_rust
     env:
       TSURARA_REQUIRE_CHECKERS: typescript,python,rust,go
       TSURARA_REQUIRE_CORPUS: "1"
@@ -142,17 +232,13 @@ jobs:
           path: target/corpus
           key: corpus-${{ hashFiles('corpus/sources.json') }}
       - run: node scripts/fetch-corpus.mjs
-      # Checks that passed with the same files and inputs are skipped; the key of each
-      # marker is a hash of everything the check depends on, so the latest cache is safe to reuse.
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: target/checker-cache
-          key: checker-cache-${{ github.sha }}
-          restore-keys: checker-cache-
+          key: checker-cache-${{ matrix.part }}-${{ github.sha }}
+          restore-keys: checker-cache-${{ matrix.part }}-
       - run: uv sync --project runtimes/python --locked
-      - run: cargo test --release -p tsurara-cli --test corpus
-      # Random definitions; more cases run weekly in weekly.yml.
-      - run: cargo test --release -p tsurara-cli --test properties
+      - run: cargo test --release -p tsurara-cli --test corpus ${{ matrix.tests }}
 
   # Performance: generation and tsc on the corpus, compared with the last run on main.
   # The results are kept as an artifact; the last ones are the baseline in the cache.
@@ -191,6 +277,8 @@ jobs:
 
   # examples/pnpm-monorepo: one generated package shared by a Vite app and a Node app.
   example:
+    needs: changes
+    if: needs.changes.outputs.example == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -211,6 +299,8 @@ jobs:
 
   # examples/react-tanstack: a Next.js app with TanStack Query, its tests and its build.
   example-react:
+    needs: changes
+    if: needs.changes.outputs.example-react == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -233,6 +323,8 @@ jobs:
 
   # The oldest supported Node runs generated code with type stripping (design.md chapter 17).
   node-22:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -251,6 +343,8 @@ jobs:
 
   # The minimum supported Rust version, with the toolchain rustup installs on the runner.
   msrv:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -265,6 +359,8 @@ jobs:
       - run: cargo +1.85 check --manifest-path runtimes/rust/Cargo.toml
 
   typescript:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -293,6 +389,8 @@ jobs:
   # vulnerabilities of the npm packages that ship (dev dependencies only run in CI), and the
   # notices a binary release ships (scripts/third-party-licenses.mjs).
   audit:
+    needs: changes
+    if: needs.changes.outputs.audit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -303,7 +401,9 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
         with:
           manifest-path: runtimes/rust/Cargo.toml
-          arguments: --config ${{ github.workspace }}/deny.toml
+          # The action runs in a container with the repository at /github/workspace, where the
+          # runner's path in github.workspace does not exist.
+          arguments: --config /github/workspace/deny.toml
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
       - run: pnpm audit --prod
       - run: pnpm --dir examples/pnpm-monorepo audit --prod
@@ -312,6 +412,8 @@ jobs:
 
   # The workflows themselves (actionlint, with shellcheck on the `run` scripts).
   actionlint:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -324,6 +426,8 @@ jobs:
   # The CLI ships as a binary for every platform: it builds on macOS and Windows, and generates
   # and checks code there (paths, line endings). The language checkers run on Linux only.
   cross-platform:
+    needs: changes
+    if: needs.changes.outputs.all == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     strategy:
@@ -359,16 +463,20 @@ jobs:
       # The crates without language checkers.
       - run: cargo test -p tsurara-loader -p tsurara-sem -p tsurara-naming -p tsurara-pretty -p tsurara-lower -p tsurara-sample -p tsurara-backend
 
-  # One status for branch protection: every job above passed (bench runs on main only).
+  # One status for branch protection: every job above passed or was not needed (bench runs on
+  # main only). A job is skipped only when `changes` leaves it out: if `changes` fails, its result
+  # fails this job.
   ci:
     if: always()
     needs:
+      - changes
       - rust
       - language
       - rust-runtime
       - go-runtime
       - python-runtime
       - corpus
+      - real-world
       - example
       - example-react
       - node-22
@@ -385,4 +493,4 @@ jobs:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
           echo "$RESULTS"
-          for r in $RESULTS; do [ "$r" = success ] || exit 1; done
+          for r in $RESULTS; do [ "$r" = success ] || [ "$r" = skipped ] || exit 1; done

@@ -71,7 +71,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y musl-tools
       # The Rust version of mise.toml, through the runner's rustup.
       - run: |
-          rust=$(sed -n 's/^rust = "\(.*\)"$/\1/p' mise.toml)
+          rust=$(sed -n 's/^rust = .*version = "\([^"]*\)".*$/\1/p' mise.toml)
           rustup toolchain install "$rust" --profile minimal --target "${{ matrix.target }}"
           rustup default "$rust"
       - run: cargo build --release --locked -p tsurara-cli --target "${{ matrix.target }}"

@@ -1,7 +1,8 @@
 # Dependency updates. Every version waits 5 days after its release before Dependabot proposes it
 # (`cooldown`), so that a compromised release is likely to be found and pulled first; pnpm's
 # `minimumReleaseAge` applies the same wait to installs by hand. Security updates are not delayed.
-# Minor and patch updates are grouped per ecosystem; major updates come one by one.
+# Minor and patch updates are grouped per ecosystem; major updates come one by one, except for
+# GitHub Actions, whose updates all come in one pull request (each one runs the whole CI).
 version: 2
 updates:
   - package-ecosystem: cargo
@@ -37,6 +38,16 @@ updates:
       - dependency-name: typescript58
       # React Native 0.75's Babel preset, for the Hermes VM of that release (runtimes/typescript/hermes).
       - dependency-name: babel-preset-rn075
+      # React Native's Babel preset (0.88) needs Babel 7, and its runtime transform emits helpers
+      # of @babel/runtime 7.
+      - dependency-name: "@babel/core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@babel/runtime"
+        update-types: ["version-update:semver-major"]
+      # The types of the oldest supported Node (engines: >=22), so that code does not use newer
+      # APIs.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: uv
     directories:
@@ -67,4 +78,4 @@ updates:
       default-days: 5
     groups:
       actions:
-        update-types: [minor, patch]
+        patterns: ["*"]

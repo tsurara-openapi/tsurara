@@ -519,9 +519,18 @@ impl Checker for RustChecker {
     }
 }
 
+/// Held for a whole check of `RustChecker`: a check removes its crate's artifacts at the end, and
+/// they share their names with every other check's (`tsurara-generated`), so a check must not run
+/// while another one builds or runs its tests. Cargo runs test binaries one at a time, so the
+/// threads of one test binary are the only checks that can overlap.
+static RUST_CHECK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 impl RustChecker {
     /// Runs the checker, without the cache of `check`.
     pub fn check_uncached(&self, files: &[(String, String)]) -> Result<(), String> {
+        let _check = RUST_CHECK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if Command::new("cargo").arg("--version").output().is_err() {
             if required("rust") {
                 return Err("cargo is required".into());
@@ -529,6 +538,10 @@ impl RustChecker {
             eprintln!("skipping: cargo was not found");
             return Ok(());
         }
+        // The generated code is checked once: as the library, and never as its own test or bench
+        // harness (`[lib] test = false`, and `--lib --tests` below instead of `--all-targets`,
+        // which also checks the library as a bench). Two checks at once of the largest
+        // definitions took more than the 16 GB of a CI runner.
         let dir = tempfile::Builder::new()
             .prefix("tsurara-rust-")
             .tempdir()
@@ -539,7 +552,7 @@ impl RustChecker {
         std::fs::write(
             dir.join("Cargo.toml"),
             format!(
-                "[package]\nname = \"tsurara-generated\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n[workspace]\n\n[features]\nmocks = [{}]\n\n[dependencies]\n{}\n\n[dev-dependencies]\ntokio = {{ version = \"1\", features = [\"io-util\", \"macros\", \"net\", \"rt-multi-thread\", \"time\"] }}\n",
+                "[package]\nname = \"tsurara-generated\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n[lib]\ntest = false\ndoctest = false\n\n[workspace]\n\n[features]\nmocks = [{}]\n\n[dependencies]\n{}\n\n[dev-dependencies]\ntokio = {{ version = \"1\", features = [\"io-util\", \"macros\", \"net\", \"rt-multi-thread\", \"time\"] }}\n",
                 if self.vendored.is_empty() {
                     "\"tsurara-client/testing\""
                 } else {
@@ -574,11 +587,14 @@ impl RustChecker {
             std::fs::write(dir.join("tests").join(format!("{name}.rs")), contents).expect("write");
         }
         let target = repo_root().join("target/rust-checker");
+        // No incremental data: each crate is checked once, and for the largest real-world
+        // definitions that data alone takes gigabytes.
         let run = |args: &[&str]| {
             Command::new("cargo")
                 .args(args)
                 .current_dir(&dir)
                 .env("CARGO_TARGET_DIR", &target)
+                .env("CARGO_INCREMENTAL", "0")
                 .output()
                 .expect("run cargo")
         };
@@ -587,7 +603,7 @@ impl RustChecker {
         } else {
             &[]
         };
-        let mut clippy = vec!["clippy", "--quiet", "--all-targets"];
+        let mut clippy = vec!["clippy", "--quiet", "--lib", "--tests"];
         clippy.extend(features);
         clippy.extend(["--", "-D", "warnings"]);
         let mut outputs = vec![run(&clippy)];
@@ -596,6 +612,11 @@ impl RustChecker {
             test.extend(features);
             outputs.push(run(&test));
         }
+        // The crate's own artifacts are never reused (each crate is in a new directory, so its
+        // package id differs), and those of a large definition take gigabytes: remove them, keep
+        // the runtime's and the dependencies'. `RUST_CHECK` keeps other checks from running
+        // meanwhile, since this removes every check's artifacts of the same name.
+        let _ = run(&["clean", "--quiet", "-p", "tsurara-generated"]);
         match outputs.iter().find(|o| !o.status.success()) {
             None => {
                 let _ = std::fs::remove_dir_all(&dir);
