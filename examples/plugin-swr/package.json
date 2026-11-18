@@ -5,6 +5,6 @@
   "description": "A tsurara plugin that writes SWR hooks (docs/guide/plugins.md)",
   "devDependencies": {
     "@tsurara/plugin": "workspace:*",
-    "swr": "2.3.8"
+    "swr": "2.5.1"
   }
 }
