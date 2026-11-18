@@ -114,11 +114,13 @@ jobs:
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
       - run: pnpm install --frozen-lockfile
       - run: uv sync --project runtimes/python --locked
-      - run: uv run --project runtimes/python pytest
+      # --directory, not --project: pytest collects from the working directory, and from the
+      # repository root it also picks up the plugin SDK's tests.
+      - run: uv run --directory runtimes/python pytest
       - run: node_modules/.bin/pyright -p runtimes/python
       # The Python plugin SDK (packages/plugin-python).
       - run: uv sync --project packages/plugin-python --locked
-      - run: uv run --project packages/plugin-python pytest
+      - run: uv run --directory packages/plugin-python pytest
       - run: node_modules/.bin/pyright -p packages/plugin-python
 
   # Real-world definitions and edge cases through tsc (the tsconfig matrix, 7.0.2 and 5.8) and
@@ -303,7 +305,9 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
         with:
           manifest-path: runtimes/rust/Cargo.toml
-          arguments: --config ${{ github.workspace }}/deny.toml
+          # The action runs in a container with the repository at /github/workspace, where the
+          # runner's path in github.workspace does not exist.
+          arguments: --config /github/workspace/deny.toml
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
       - run: pnpm audit --prod
       - run: pnpm --dir examples/pnpm-monorepo audit --prod
