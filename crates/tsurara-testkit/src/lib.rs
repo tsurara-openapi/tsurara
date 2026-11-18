@@ -574,11 +574,14 @@ impl RustChecker {
             std::fs::write(dir.join("tests").join(format!("{name}.rs")), contents).expect("write");
         }
         let target = repo_root().join("target/rust-checker");
+        // No incremental data: each crate is checked once, and for the largest real-world
+        // definitions that data alone takes gigabytes.
         let run = |args: &[&str]| {
             Command::new("cargo")
                 .args(args)
                 .current_dir(&dir)
                 .env("CARGO_TARGET_DIR", &target)
+                .env("CARGO_INCREMENTAL", "0")
                 .output()
                 .expect("run cargo")
         };
@@ -596,6 +599,11 @@ impl RustChecker {
             test.extend(features);
             outputs.push(run(&test));
         }
+        // The crate's own artifacts are never reused (each crate is in a new directory, so its
+        // package id differs), and those of a large definition take gigabytes: remove them, keep
+        // the runtime's and the dependencies'. Cargo's lock on the target directory serializes
+        // this with other checks; one that runs `cargo test` after `cargo clippy` only builds again.
+        let _ = run(&["clean", "--quiet", "-p", "tsurara-generated"]);
         match outputs.iter().find(|o| !o.status.success()) {
             None => {
                 let _ = std::fs::remove_dir_all(&dir);
