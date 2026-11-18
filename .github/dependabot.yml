@@ -1,7 +1,8 @@
 # Dependency updates. Every version waits 5 days after its release before Dependabot proposes it
 # (`cooldown`), so that a compromised release is likely to be found and pulled first; pnpm's
 # `minimumReleaseAge` applies the same wait to installs by hand. Security updates are not delayed.
-# Minor and patch updates are grouped per ecosystem; major updates come one by one.
+# Minor and patch updates are grouped per ecosystem; major updates come one by one, except for
+# GitHub Actions, whose updates all come in one pull request (each one runs the whole CI).
 version: 2
 updates:
   - package-ecosystem: cargo
@@ -77,4 +78,4 @@ updates:
       default-days: 5
     groups:
       actions:
-        update-types: [minor, patch]
+        patterns: ["*"]
