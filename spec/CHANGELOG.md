@@ -2,7 +2,7 @@
 
 Every change to `sem-model.schema.json`, `manifest.schema.json` and `plugin-protocol.schema.json` gets an entry, newest first, with the fingerprint of each changed schema as `crates/tsurara-cli/tests/spec_schemas.rs` prints it. The rules for versions are in design.md chapter 14.
 
-## Unreleased: first version
+## 0.1.0: first version
 
 - `semVersion` 1, `manifestVersion` 1, protocol 2 (protocol 1 is protocol 2 without `manifest` in `GenerateResponse`). Changes before the first release are not recorded.
 - `sem-model.schema.json` 4ed358372b82800d
