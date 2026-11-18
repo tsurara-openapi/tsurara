@@ -538,6 +538,9 @@ impl RustChecker {
             eprintln!("skipping: cargo was not found");
             return Ok(());
         }
+        // The library has no tests of its own (`[lib] test = false`): with them, `--all-targets`
+        // checked the generated code twice at once, which for the largest definitions took more
+        // than the 16 GB of a CI runner.
         let dir = tempfile::Builder::new()
             .prefix("tsurara-rust-")
             .tempdir()
@@ -548,7 +551,7 @@ impl RustChecker {
         std::fs::write(
             dir.join("Cargo.toml"),
             format!(
-                "[package]\nname = \"tsurara-generated\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n[workspace]\n\n[features]\nmocks = [{}]\n\n[dependencies]\n{}\n\n[dev-dependencies]\ntokio = {{ version = \"1\", features = [\"io-util\", \"macros\", \"net\", \"rt-multi-thread\", \"time\"] }}\n",
+                "[package]\nname = \"tsurara-generated\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n[lib]\ntest = false\ndoctest = false\n\n[workspace]\n\n[features]\nmocks = [{}]\n\n[dependencies]\n{}\n\n[dev-dependencies]\ntokio = {{ version = \"1\", features = [\"io-util\", \"macros\", \"net\", \"rt-multi-thread\", \"time\"] }}\n",
                 if self.vendored.is_empty() {
                     "\"tsurara-client/testing\""
                 } else {
