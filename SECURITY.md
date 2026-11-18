@@ -16,4 +16,4 @@ You will get an answer within a week. Fixes are released as soon as they are rea
 
 ## Supported versions
 
-tsurara has not been released yet. Once it is, security fixes go into the latest release.
+Security fixes go into the latest release; earlier versions are not updated.
