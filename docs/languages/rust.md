@@ -49,7 +49,7 @@ Annotations (design.md 18.7): serde derives and attributes. Constructs serde's d
 | Array, map | `Vec<T>`, `BTreeMap<String, T>` |
 | `{}`, external without a `rust` entry | `serde_json::Value` |
 | Binary | `tsurara_client::File` where sent (bodies, multipart parts); `Vec<u8>` for responses |
-| `x-tsurara-type` / type mappings | The `rust` entry, a path with generics (`uuid::Uuid`, `chrono::DateTime<chrono::Utc>`), checked like 073 |
+| `x-tsurara-type` / type mappings | The `rust` entry, a path with generics (`uuid::Uuid`, `chrono::DateTime<chrono::Utc>`) |
 
 ### Approximations
 

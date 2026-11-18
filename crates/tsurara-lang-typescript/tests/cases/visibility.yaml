@@ -1,4 +1,4 @@
-# 010 readOnly/writeOnly.
+# readOnly/writeOnly.
 
 - name: readOnly and writeOnly split the type
   schemas:

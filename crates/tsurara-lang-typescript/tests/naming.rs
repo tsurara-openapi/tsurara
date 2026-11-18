@@ -304,7 +304,7 @@ fn derived_doc(extra: &str) -> String {
 #[test]
 fn derived_names_that_collide_move_aside_with_a_warning() {
     // The schema keeps its name; only the colliding derived name gets `Operation` before its suffix
-    // (as kubb does), and the function and the other derived names stay (design.md 6.6).
+    // and the function and the other derived names stay (design.md 6.6).
     let out = generate(
         &set(&derived_doc("ListPetsOperationResult: { type: string }")),
         &Options::default(),

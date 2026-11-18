@@ -5,7 +5,7 @@ from typing import Final
 
 class Missing:
     """A field that is absent from the JSON object, as opposed to `null` (`None`). Only fields that are
-    both optional and nullable use it (design.md 18.16, Q3)."""
+    both optional and nullable use it (design.md 18.15, Q3)."""
 
     _instance: Missing | None = None
 

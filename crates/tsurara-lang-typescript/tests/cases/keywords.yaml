@@ -1,4 +1,4 @@
-# Keywords outside the mapping table of 007.
+# Keywords outside the mapping table (table.yaml).
 
 - name: type arrays (3.1)
   schema: { type: [string, number, "null"] }
@@ -172,7 +172,7 @@
     A: P
   warnings: []
 
-# 048: an acyclic `$ref` to a schema nested in a component still names that schema in TypeScript.
+# An acyclic `$ref` to a schema nested in a component still names that schema in TypeScript.
 - name: an acyclic reference to a nested property schema is a named type
   schemas:
     A:

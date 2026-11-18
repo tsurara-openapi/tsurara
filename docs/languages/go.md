@@ -51,7 +51,7 @@ Annotations (design.md 18.7): `encoding/json` struct tags. What tags cannot expr
 | Array, map | `[]T`, `map[string]T` |
 | `{}`, external without a `go` entry | `any` |
 | Binary | `tsurara.File` (bytes, file name, media type) where sent (bodies, multipart parts); `[]byte` for responses |
-| `x-tsurara-type` / type mappings | The `go` entry, or `go.typeMappings` and `go.overrides`: a type with the import path of its package (`{ type: uuid.UUID, import: { from: github.com/google/uuid } }`, `{ type: time.Time, import: { from: time } }`), checked like 073 |
+| `x-tsurara-type` / type mappings | The `go` entry, or `go.typeMappings` and `go.overrides`: a type with the import path of its package (`{ type: uuid.UUID, import: { from: github.com/google/uuid } }`, `{ type: time.Time, import: { from: time } }`) |
 
 ### Approximations
 

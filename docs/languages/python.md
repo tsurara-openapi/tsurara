@@ -2,7 +2,7 @@
 
 The Python backend (`language: python`, crate `tsurara-lang-python`) generates dataclasses, enums and type aliases, with TypeDefs for a runtime that converts JSON generically (design.md 18.7). Generated code uses the runtime `tsurara-client` (`runtimes/python`): sync and async clients over httpx, Results, and the TypeDef codec; it passes the conformance vectors in `spec/`. Each operation gets a call function.
 
-Generated code requires Python 3.11 or later (design.md 18.16, Q2) and is checked with pyright as Python 3.11.
+Generated code requires Python 3.11 or later (design.md 18.15, Q2) and is checked with pyright as Python 3.11.
 
 ## Quick start
 

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-/// A field that may be missing, `null`, or a value (optional and nullable, design.md 18.16 Q3).
+/// A field that may be missing, `null`, or a value (optional and nullable, design.md 18.15 Q3).
 /// Use with `#[serde(default, skip_serializing_if = "Nullable::is_missing")]`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub enum Nullable<T> {
