@@ -34,10 +34,6 @@ const DOCS: &[(&str, &str)] = &[
         include_str!("../../../docs/guide/configuration.md"),
     ),
     (
-        "docs/guide/migration.md",
-        include_str!("../../../docs/guide/migration.md"),
-    ),
-    (
         "docs/guide/mocks.md",
         include_str!("../../../docs/guide/mocks.md"),
     ),
