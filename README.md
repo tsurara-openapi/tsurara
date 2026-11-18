@@ -56,7 +56,7 @@ Requirements: Node 22.18 or later (to run the example below directly).
 
 ## Documentation
 
-- TypeScript: [configuration](docs/guide/configuration.md), [types](docs/guide/types.md), [the client](docs/guide/client.md), [validation](docs/guide/validation.md), [React and TanStack Query](docs/guide/react.md), [mocks](docs/guide/mocks.md), [monorepos](docs/guide/monorepo.md), [migration](docs/guide/migration.md)
+- TypeScript: [configuration](docs/guide/configuration.md), [types](docs/guide/types.md), [the client](docs/guide/client.md), [validation](docs/guide/validation.md), [React and TanStack Query](docs/guide/react.md), [mocks](docs/guide/mocks.md), [monorepos](docs/guide/monorepo.md)
 - Other languages: [Python](docs/languages/python.md), [Rust](docs/languages/rust.md) (experimental), [Go](docs/languages/go.md) (experimental), [adding a language](docs/guide/backends.md)
 - Tools: [the CLI](docs/guide/cli.md), [coding agents](docs/guide/ai.md), [plugins](docs/guide/plugins.md)
 - Design: [docs/design.md](docs/design.md)
