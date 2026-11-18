@@ -538,9 +538,10 @@ impl RustChecker {
             eprintln!("skipping: cargo was not found");
             return Ok(());
         }
-        // The library has no tests of its own (`[lib] test = false`): with them, `--all-targets`
-        // checked the generated code twice at once, which for the largest definitions took more
-        // than the 16 GB of a CI runner.
+        // The generated code is checked once: as the library, and never as its own test or bench
+        // harness (`[lib] test = false`, and `--lib --tests` below instead of `--all-targets`,
+        // which also checks the library as a bench). Two checks at once of the largest
+        // definitions took more than the 16 GB of a CI runner.
         let dir = tempfile::Builder::new()
             .prefix("tsurara-rust-")
             .tempdir()
@@ -602,7 +603,7 @@ impl RustChecker {
         } else {
             &[]
         };
-        let mut clippy = vec!["clippy", "--quiet", "--all-targets"];
+        let mut clippy = vec!["clippy", "--quiet", "--lib", "--tests"];
         clippy.extend(features);
         clippy.extend(["--", "-D", "warnings"]);
         let mut outputs = vec![run(&clippy)];
