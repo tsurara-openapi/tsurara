@@ -47,7 +47,7 @@ jobs:
           if [ "$EVENT" = pull_request ]; then
             git diff --name-only HEAD^1 HEAD | node scripts/ci-scope.mjs | tee -a "$GITHUB_OUTPUT"
           else
-            echo all=true | tee -a "$GITHUB_OUTPUT"
+            node scripts/ci-scope.mjs --all | tee -a "$GITHUB_OUTPUT"
           fi
 
   rust:

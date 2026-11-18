@@ -104,3 +104,12 @@ test('the command reads file names and writes GitHub outputs', () => {
   );
   assert.equal(out, 'all=false\nrust=true\nexample=false\nexample-react=false\naudit=false\n');
 });
+
+test('--all writes every job, for pushes and runs by hand', () => {
+  const out = execFileSync(
+    process.execPath,
+    [fileURLToPath(new URL('./ci-scope.mjs', import.meta.url)), '--all'],
+    { input: 'SECURITY.md\n', encoding: 'utf8' },
+  );
+  assert.equal(out, 'all=true\nrust=true\nexample=true\nexample-react=true\naudit=true\n');
+});

@@ -1,5 +1,6 @@
 // Which jobs of ci.yml a pull request needs, from the files it changes (one per line on stdin).
-// Writes `name=true|false` lines for $GITHUB_OUTPUT. A file that no group below names runs every
+// Writes `name=true|false` lines for $GITHUB_OUTPUT; with `--all` (pushes and runs by hand),
+// every job without reading stdin. A file that no group below names runs every
 // job, so a new kind of file is checked by everything until it is given a group; tests in
 // ci-scope.test.mjs.
 import { readFileSync } from 'node:fs';
@@ -55,10 +56,13 @@ export function scope(files) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = readFileSync(0, 'utf8')
-    .split('\n')
-    .filter((line) => line !== '');
-  const jobs = scope(files);
+  const jobs = process.argv.includes('--all')
+    ? scope([])
+    : scope(
+        readFileSync(0, 'utf8')
+          .split('\n')
+          .filter((line) => line !== ''),
+      );
   process.stdout.write(
     `all=${jobs.all}\nrust=${jobs.rust}\nexample=${jobs.example}\nexample-react=${jobs.exampleReact}\naudit=${jobs.audit}\n`,
   );
