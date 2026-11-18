@@ -7,7 +7,7 @@
     "test": "tsc -p tsconfig.json && node run.mjs"
   },
   "devDependencies": {
-    "@babel/core": "7.29.13",
+    "@babel/core": "8.1.2",
     "@babel/runtime": "7.29.14",
     "@react-native/babel-preset": "0.88.1",
     "abort-controller": "3.0.0",
