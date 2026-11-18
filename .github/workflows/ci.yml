@@ -126,9 +126,20 @@ jobs:
   # Real-world definitions and edge cases through tsc (the tsconfig matrix, 7.0.2 and 5.8) and
   # pyright, gofmt, go vet and go build, and cargo clippy (design.md 13.1). The
   # corpus is pinned by sha256 in corpus/sources.json.
+  #
+  # Two runners: compiling the Rust of the largest definitions takes about 8 GB of memory in one
+  # rustc, and together with the other checks of the corpus it exhausted the 16 GB of one runner.
   corpus:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: rust
+            tests: --test corpus compile_as_rust
+          - part: other
+            tests: --test corpus -- --skip compile_as_rust
     env:
       TSURARA_REQUIRE_CHECKERS: typescript,python,rust,go
       TSURARA_REQUIRE_CORPUS: "1"
@@ -149,12 +160,13 @@ jobs:
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: target/checker-cache
-          key: checker-cache-${{ github.sha }}
-          restore-keys: checker-cache-
+          key: checker-cache-${{ matrix.part }}-${{ github.sha }}
+          restore-keys: checker-cache-${{ matrix.part }}-
       - run: uv sync --project runtimes/python --locked
-      - run: cargo test --release -p tsurara-cli --test corpus
+      - run: cargo test --release -p tsurara-cli ${{ matrix.tests }}
       # Random definitions; more cases run weekly in weekly.yml.
-      - run: cargo test --release -p tsurara-cli --test properties
+      - if: matrix.part == 'other'
+        run: cargo test --release -p tsurara-cli --test properties
 
   # Performance: generation and tsc on the corpus, compared with the last run on main.
   # The results are kept as an artifact; the last ones are the baseline in the cache.
