@@ -37,6 +37,16 @@ updates:
       - dependency-name: typescript58
       # React Native 0.75's Babel preset, for the Hermes VM of that release (runtimes/typescript/hermes).
       - dependency-name: babel-preset-rn075
+      # React Native's Babel preset (0.88) needs Babel 7, and its runtime transform emits helpers
+      # of @babel/runtime 7.
+      - dependency-name: "@babel/core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@babel/runtime"
+        update-types: ["version-update:semver-major"]
+      # The types of the oldest supported Node (engines: >=22), so that code does not use newer
+      # APIs.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: uv
     directories:
