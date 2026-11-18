@@ -298,7 +298,7 @@
   schema: { type: array }
   expect: "unknown[]"
 
-  # 029: whether a value is binary depends on where it appears. Inside JSON it is always a JSON string.
+  # Whether a value is binary depends on where it appears. Inside JSON it is always a JSON string.
   # The HTTP body itself and multipart part values are covered by tests/binary.rs.
   accept: [[], [1, a]]
   reject: [{}]
@@ -405,7 +405,7 @@
   reject: [true]
   approx: [a]
 
-  # 038: the model keeps integer and number apart; TypeScript prints both as `number`.
+  # The model keeps integer and number apart; TypeScript prints both as `number`.
   semantic: "oneOf(string, number, string)"
 
 - name: integer and number together are one number

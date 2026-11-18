@@ -3,7 +3,7 @@ node = "26.13.0"
 # rustfmt and clippy for `cargo fmt` and `cargo clippy` (mise installs the minimal profile otherwise).
 rust = { version = "1.99.1", components = "rustfmt,clippy" }
 pnpm = "12.18.0"
-# The minimum Python version of generated code (design.md 18.16, Q2).
+# The minimum Python version of generated code (design.md 18.15, Q2).
 python = "3.11.14"
 # Python packaging for runtimes/python.
 uv = "0.9.26"

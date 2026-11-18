@@ -90,7 +90,7 @@ impl Names {
     /// In each element of `derived`, `{}` is replaced by the base name and `{P}` by the base name
     /// with its first letter capitalized. A collision of the base name appends a number. A derived
     /// name that is already taken (usually by a schema) moves aside instead: `Operation` goes before
-    /// its suffix (`{P}OperationResult`), then a number if that is taken too, as kubb does. The base
+    /// its suffix (`{P}OperationResult`), then a number if that is taken too. The base
     /// name and the other derived names stay, so adding a schema never renames the function
     /// (design.md 6.6).
     #[allow(clippy::too_many_arguments)]

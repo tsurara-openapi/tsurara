@@ -1,7 +1,7 @@
 //! Analysis of OpenAPI definitions into the model that backends generate code from. Does no I/O.
 //!
 //! The model is still TypeScript-shaped in places: `ir`, `print` and `options` move to the TypeScript
-//! backend as the language-neutral model is introduced (design.md 18.15).
+//! backend as the language-neutral model is introduced (design.md 18).
 //!
 //! Published for backends outside this repository, with one version for all tsurara crates,
 //! released with the CLI and moving with `semVersion`. Stable: `Model` and the types it holds

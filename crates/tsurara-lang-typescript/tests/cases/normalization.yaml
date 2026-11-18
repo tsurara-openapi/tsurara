@@ -1,4 +1,4 @@
-# 008 normalization.
+# Normalization.
 
 - name: allOf of inline objects becomes one object
   schema:

@@ -8,7 +8,7 @@ To add a case, append it to the relevant file. Rows of the mapping table in desi
 
 ### Accepted and rejected values
 
-Comparing printed types cannot catch an expected type that is itself wrong (the fixed-length tuples of 028 were such a mistake). So cases also list values, checked by `tsc` against the generated type:
+Comparing printed types cannot catch an expected type that is itself wrong (the expected fixed-length tuples were once such a mistake). So cases also list values, checked by `tsc` against the generated type:
 
 ```yaml
 - name: prefixItems with items false have optional elements
