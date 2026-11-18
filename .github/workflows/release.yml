@@ -220,9 +220,16 @@ jobs:
           name: npm-libraries
           path: npm-libraries
       # The platform packages before `tsurara`, which depends on them. `--ignore-scripts`: nothing
-      # of the packages runs here.
+      # of the packages runs here. The first release publishes with a token (`NPM_TOKEN`, a secret
+      # of the `release` environment), since npm configures trusted publishing only for packages
+      # that exist; later releases have none, and npm uses trusted publishing.
       - name: Publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          if [ -n "$NPM_TOKEN" ]; then
+            npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+          fi
           for dir in npm/cli-* npm/tsurara; do
             npm publish "./$dir" --provenance --access public --ignore-scripts
           done
@@ -234,11 +241,18 @@ jobs:
     if: github.ref_type == 'tag'
     needs: [package, build-packages]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # crates.io lets a user publish 5 new crates at once, then one every 10 minutes: the first
+    # release of the 9 crates takes about 40 minutes.
+    timeout-minutes: 75
     environment: release
     permissions:
       contents: read
       id-token: write
+    env:
+      # The first release publishes with a token (a secret of the `release` environment), since
+      # crates.io configures trusted publishing only for crates that exist; later releases have
+      # none, and use trusted publishing.
+      FIRST_RELEASE_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -247,15 +261,39 @@ jobs:
         with:
           cache: false
       - id: auth
+        if: env.FIRST_RELEASE_TOKEN == ''
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
       # The crates that external backends, plugins and generated Rust code depend on. The CLI is
       # not published to crates.io: it embeds the runtimes from outside its crate directory.
-      # `--no-verify`: build-packages built them; nothing is compiled while a token exists.
+      # `--no-verify`: build-packages built them; nothing is compiled while a token exists. One
+      # crate at a time in the order of their dependencies, and again after the wait that a rate
+      # limit (HTTP 429) asks for; a version that is already published is skipped, so the job can
+      # be run again.
       - env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token || env.FIRST_RELEASE_TOKEN }}
         run: |
-          cargo publish --locked --no-verify -p tsurara-loader -p tsurara-sem -p tsurara-naming -p tsurara-pretty -p tsurara-lower -p tsurara-sample -p tsurara-backend -p tsurara-plugin
-          cargo publish --locked --no-verify --manifest-path runtimes/rust/Cargo.toml
+          publish() {
+            for attempt in 1 2 3 4 5 6; do
+              if out=$(cargo publish --locked --no-verify "$@" 2>&1); then
+                echo "$out"
+                return 0
+              fi
+              echo "$out"
+              if grep -qE 'already exists|already uploaded' <<<"$out"; then
+                return 0
+              fi
+              if ! grep -qE '429|Too Many Requests|too many' <<<"$out"; then
+                return 1
+              fi
+              echo "rate limited (attempt $attempt): waiting 10 minutes"
+              sleep 610
+            done
+            return 1
+          }
+          for crate in tsurara-loader tsurara-naming tsurara-pretty tsurara-sem tsurara-lower tsurara-sample tsurara-backend tsurara-plugin; do
+            publish -p "$crate"
+          done
+          publish --manifest-path runtimes/rust/Cargo.toml
 
   pypi:
     if: github.ref_type == 'tag'
@@ -277,7 +315,17 @@ jobs:
         with:
           name: python
           path: python
-      - run: uv publish --trusted-publishing always python/*
+      # The first release publishes with a token (`PYPI_TOKEN`, a secret of the `release`
+      # environment): PyPI keeps one pending publisher per workflow and environment, so the two
+      # projects cannot both be created through trusted publishing. Later releases have none.
+      - env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          if [ -n "$PYPI_TOKEN" ]; then
+            uv publish --token "$PYPI_TOKEN" python/*
+          else
+            uv publish --trusted-publishing always python/*
+          fi
 
   # Go modules are published by their tags; the module proxy fetches them from the repository.
   go:
