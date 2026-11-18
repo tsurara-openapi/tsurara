@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "types": ["node"],
+    "plugins": [{ "name": "next" }]
+  },
+  "include": ["app", "next-env.d.ts"]
+}

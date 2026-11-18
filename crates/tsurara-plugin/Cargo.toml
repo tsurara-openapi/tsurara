@@ -1,0 +1,17 @@
+[package]
+name = "tsurara-plugin"
+description = "Write tsurara plugins in Rust"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+tsurara-backend.workspace = true
+tsurara-sem.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

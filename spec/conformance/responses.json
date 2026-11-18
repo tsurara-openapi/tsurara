@@ -1,0 +1,550 @@
+[
+  {
+    "name": "JSON success",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "json",
+          "types": {
+            "application/json": {
+              "ref": "Pet"
+            }
+          }
+        },
+        "404": {
+          "parseAs": "json"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "{\"id\":1}"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "data": {
+        "id": 1
+      }
+    }
+  },
+  {
+    "name": "documented error",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "json"
+        },
+        "404": {
+          "parseAs": "json"
+        }
+      }
+    },
+    "response": {
+      "status": 404,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "{\"m\":\"x\"}"
+      }
+    },
+    "expect": {
+      "kind": "http",
+      "status": 404,
+      "documented": true,
+      "error": {
+        "m": "x"
+      }
+    }
+  },
+  {
+    "name": "undocumented error with JSON",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "json"
+        },
+        "404": {
+          "parseAs": "json"
+        }
+      }
+    },
+    "response": {
+      "status": 500,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "{\"m\":\"x\"}"
+      }
+    },
+    "expect": {
+      "kind": "http",
+      "status": 500,
+      "documented": false,
+      "error": {
+        "m": "x"
+      }
+    }
+  },
+  {
+    "name": "undocumented error with text",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "json"
+        },
+        "404": {
+          "parseAs": "json"
+        }
+      }
+    },
+    "response": {
+      "status": 502,
+      "headers": {
+        "content-type": "text/plain"
+      },
+      "body": {
+        "text": "bad gateway"
+      }
+    },
+    "expect": {
+      "kind": "http",
+      "status": 502,
+      "documented": false,
+      "error": "bad gateway"
+    }
+  },
+  {
+    "name": "an undocumented 2xx is not a success when other successes are documented",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "json"
+        },
+        "404": {
+          "parseAs": "json"
+        }
+      }
+    },
+    "response": {
+      "status": 201,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "{}"
+      }
+    },
+    "expect": {
+      "kind": "http",
+      "status": 201,
+      "documented": false,
+      "error": {}
+    }
+  },
+  {
+    "name": "a Content-Type that is not JSON is a parse failure",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "json"
+        },
+        "404": {
+          "parseAs": "json"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "text/html"
+      },
+      "body": {
+        "text": "<p>"
+      }
+    },
+    "expect": {
+      "kind": "parse"
+    }
+  },
+  {
+    "name": "invalid JSON is a parse failure",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "json"
+        },
+        "404": {
+          "parseAs": "json"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "{"
+      }
+    },
+    "expect": {
+      "kind": "parse"
+    }
+  },
+  {
+    "name": "ranges match statuses",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "2XX": {
+          "parseAs": "json"
+        }
+      }
+    },
+    "response": {
+      "status": 201,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "1"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 201,
+      "data": 1
+    }
+  },
+  {
+    "name": "default is the success when nothing else is documented",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "default": {
+          "parseAs": "json"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "true"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "data": true
+    }
+  },
+  {
+    "name": "no content",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "response": {
+      "status": 204,
+      "headers": {},
+      "body": null
+    },
+    "expect": {
+      "kind": "success",
+      "status": 204,
+      "data": null
+    }
+  },
+  {
+    "name": "text",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "text"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "text/plain"
+      },
+      "body": {
+        "text": "hi"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "data": "hi"
+    }
+  },
+  {
+    "name": "blob",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "blob"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/pdf"
+      },
+      "body": {
+        "text": "%PDF"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "data": {
+        "$blob": {
+          "type": "application/pdf",
+          "text": "%PDF"
+        }
+      }
+    }
+  },
+  {
+    "name": "contentTypes picks the parse method by media type",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "json",
+          "contentTypes": {
+            "application/json": "json",
+            "text/csv": "text"
+          }
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "text/csv"
+      },
+      "body": {
+        "text": "a,b"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "data": "a,b"
+    }
+  },
+  {
+    "name": "auto reads application/json",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "auto"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "{\"a\":1}"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "data": {
+        "a": 1
+      }
+    }
+  },
+  {
+    "name": "auto reads application/problem+json",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "auto"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/problem+json"
+      },
+      "body": {
+        "text": "{\"a\":1}"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "data": {
+        "a": 1
+      }
+    }
+  },
+  {
+    "name": "auto reads text/plain",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "auto"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "text/plain; charset=utf-8"
+      },
+      "body": {
+        "text": "hi"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "data": "hi"
+    }
+  },
+  {
+    "name": "auto reads application/pdf",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "auto"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/pdf"
+      },
+      "body": {
+        "text": "%PDF"
+      }
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "data": {
+        "$blob": {
+          "type": "application/pdf",
+          "text": "%PDF"
+        }
+      }
+    }
+  },
+  {
+    "name": "auto reports invalid JSON as a parse failure",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": {
+          "parseAs": "auto"
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "{"
+      }
+    },
+    "expect": {
+      "kind": "parse"
+    }
+  }
+]

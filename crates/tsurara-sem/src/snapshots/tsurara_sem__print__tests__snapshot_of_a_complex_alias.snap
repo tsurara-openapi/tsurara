@@ -1,0 +1,18 @@
+---
+source: crates/tsurara-sem/src/print.rs
+expression: "print_type_alias(\"Pet\", &ty, Some(&doc))"
+---
+/**
+ * A pet in the store.
+ * @see https://example.com
+ */
+export type Pet = Base & {
+  /**
+   * Unique id
+   * @format int64
+   */
+  id: number;
+  status?: 'available' | 'sold' | null;
+  position: [number, number];
+  extra: { 'x-y': string; [key: string]: string | number };
+};

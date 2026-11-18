@@ -1,0 +1,92 @@
+openapi: 3.1.0
+info: { title: Cards, version: "1" }
+servers: [{ url: https://cards.example.com }]
+security: [{ bearer: [] }]
+paths:
+  /cards:
+    get:
+      operationId: listCards
+      summary: Cards of the tenant, newest first, a page at a time
+      parameters:
+        - { name: q, in: query, description: Words the title contains, schema: { type: string } }
+        - { name: cursor, in: query, schema: { type: string } }
+      x-tsurara-pagination: { param: query.cursor, next: /nextCursor }
+      responses:
+        "200":
+          {
+            description: A page,
+            content: { application/json: { schema: { $ref: "#/components/schemas/CardPage" } } },
+          }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /cards/{cardId}:
+    parameters:
+      - { name: cardId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getCard
+      responses:
+        "200":
+          {
+            description: The card,
+            content: { application/json: { schema: { $ref: "#/components/schemas/Card" } } },
+          }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          {
+            description: No such card,
+            content: { application/json: { schema: { $ref: "#/components/schemas/Problem" } } },
+          }
+    patch:
+      operationId: updateCard
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CardPatch" } } }
+      responses:
+        "200":
+          {
+            description: The updated card,
+            content: { application/json: { schema: { $ref: "#/components/schemas/Card" } } },
+          }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422":
+          {
+            description: Invalid fields,
+            content: { application/json: { schema: { $ref: "#/components/schemas/FieldErrors" } } },
+          }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer }
+  responses:
+    Unauthorized:
+      {
+        description: Signed out,
+        content: { application/json: { schema: { $ref: "#/components/schemas/Problem" } } },
+      }
+  schemas:
+    Card:
+      type: object
+      required: [id, title, done]
+      properties:
+        id: { type: string, example: c1 }
+        title: { type: string, example: Write the release notes }
+        done: { type: boolean, example: false }
+    CardPage:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Card" } }
+        nextCursor: { type: string, description: Absent on the last page }
+    CardPatch:
+      type: object
+      properties:
+        title: { type: string }
+        done: { type: boolean }
+    Problem:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+    FieldErrors:
+      type: object
+      required: [fields]
+      properties:
+        fields: { type: object, additionalProperties: { type: string } }

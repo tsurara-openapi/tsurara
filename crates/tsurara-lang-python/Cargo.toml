@@ -1,0 +1,28 @@
+[package]
+name = "tsurara-lang-python"
+description = "Python backend of tsurara: dataclasses, enums and TypeDefs (types only for now)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+tsurara-backend.workspace = true
+tsurara-runtimes.workspace = true
+tsurara-loader.workspace = true
+tsurara-lower.workspace = true
+tsurara-naming.workspace = true
+tsurara-pretty.workspace = true
+tsurara-sem.workspace = true
+tsurara-sample.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+jsonschema.workspace = true
+tsurara-testkit = { path = "../tsurara-testkit" }
+tempfile.workspace = true
+url.workspace = true
+
+[lints]
+workspace = true

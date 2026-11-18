@@ -1,0 +1,21 @@
+{
+  "name": "web-next",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "next build"
+  },
+  "dependencies": {
+    "@acme/openapi": "workspace:*",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "@types/react": "19.3.0",
+    "typescript": "7.0.2"
+  }
+}

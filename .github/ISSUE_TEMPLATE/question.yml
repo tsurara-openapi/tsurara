@@ -1,0 +1,11 @@
+name: Question
+description: How to do something with tsurara.
+labels: [question]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Include the relevant part of your configuration and definition.
+    validations:
+      required: true

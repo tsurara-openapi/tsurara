@@ -1,0 +1,1005 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tsurara configuration",
+  "description": "An tsurara configuration file. Entries written at the top level are the defaults for every target.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "JSON Schema of this file, for editors.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "extends": {
+      "description": "Base configuration files, resolved against this file. Objects are deep-merged and arrays are replaced.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Extends"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "targets": {
+      "description": "Generation targets. Without `targets`, the top level is the only target.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/$defs/TargetConfig"
+      }
+    },
+    "name": {
+      "description": "Name of the target, used by `tsurara generate --target`. Required when there are several targets.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "input": {
+      "description": "The definition: a path relative to this file, or a URL.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/InputConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "output": {
+      "description": "Output directory, relative to this file.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "language": {
+      "description": "The language to generate (default `typescript`), whose options go in the section named after\nit; or a backend program as `{ command, options }` (design.md 18.11).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LanguageConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "filter": {
+      "description": "Narrows the operations to generate.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FilterConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "naming": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NamingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "splitVisibility": {
+      "description": "Emit `XWritable` types for schemas with readOnly/writeOnly (default true).",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "wildcardAsJson": {
+      "description": "Treat wildcard media types (`*/*`, `application/*`) as JSON, for APIs that only return JSON\n(default false: parse by the actual Content-Type).",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "operations": {
+      "description": "Generate the operations (default true). With `false` the output holds the types of the\nschemas, webhooks and channels only, and needs only the types layer of the runtime: no HTTP\nclient.",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "runtime": {
+      "description": "Where generated code finds its runtime (default `package`): `vendor` writes a copy of the\nruntime's sources into the output and imports it instead of the package.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RuntimeConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "hooks": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HooksConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "plugins": {
+      "description": "Plugin modules (`@tsurara/plugin`): each runs in one process per run and takes part in the\nstages it declares. A path to the module, or `{ module, runtime }` with the command that runs\nit (default `[node]`). Paths are relative to the file they are written in.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/$defs/PluginConfig"
+      }
+    },
+    "typescript": {
+      "description": "Options of the TypeScript backend (`language: typescript`).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TypeScriptConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "python": {
+      "description": "Options of the Python backend (`language: python`).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PythonConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "rust": {
+      "description": "Options of the Rust backend (`language: rust`, experimental).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RustConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "go": {
+      "description": "Options of the Go backend (`language: go`, experimental).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GoConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Extends": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "TargetConfig": {
+      "description": "Settings of one generation target.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name of the target, used by `tsurara generate --target`. Required when there are several targets.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "input": {
+          "description": "The definition: a path relative to this file, or a URL.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/InputConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output": {
+          "description": "Output directory, relative to this file.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "description": "The language to generate (default `typescript`), whose options go in the section named after\nit; or a backend program as `{ command, options }` (design.md 18.11).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "filter": {
+          "description": "Narrows the operations to generate.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FilterConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "naming": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NamingConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "splitVisibility": {
+          "description": "Emit `XWritable` types for schemas with readOnly/writeOnly (default true).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "wildcardAsJson": {
+          "description": "Treat wildcard media types (`*/*`, `application/*`) as JSON, for APIs that only return JSON\n(default false: parse by the actual Content-Type).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "operations": {
+          "description": "Generate the operations (default true). With `false` the output holds the types of the\nschemas, webhooks and channels only, and needs only the types layer of the runtime: no HTTP\nclient.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "runtime": {
+          "description": "Where generated code finds its runtime (default `package`): `vendor` writes a copy of the\nruntime's sources into the output and imports it instead of the package.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuntimeConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hooks": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HooksConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plugins": {
+          "description": "Plugin modules (`@tsurara/plugin`): each runs in one process per run and takes part in the\nstages it declares. A path to the module, or `{ module, runtime }` with the command that runs\nit (default `[node]`). Paths are relative to the file they are written in.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/PluginConfig"
+          }
+        },
+        "typescript": {
+          "description": "Options of the TypeScript backend (`language: typescript`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TypeScriptConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "python": {
+          "description": "Options of the Python backend (`language: python`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PythonConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rust": {
+          "description": "Options of the Rust backend (`language: rust`, experimental).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RustConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "go": {
+          "description": "Options of the Go backend (`language: go`, experimental).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GoConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "InputConfig": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/InputObject"
+        }
+      ]
+    },
+    "InputObject": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "description": "A path relative to this file, or a URL.",
+          "type": "string"
+        },
+        "headers": {
+          "description": "HTTP headers, only sent to the origin of `url`. `${VAR}` expands environment variables.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "url"
+      ]
+    },
+    "LanguageConfig": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/ExternalLanguageConfig"
+        }
+      ]
+    },
+    "ExternalLanguageConfig": {
+      "description": "A backend written as an external program. The command runs in the directory of this file.",
+      "type": "object",
+      "properties": {
+        "command": {
+          "description": "`[program, ...args]`. `describe` or `generate` is appended.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "options": {
+          "description": "Passed to the program as `options`."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "command"
+      ]
+    },
+    "FilterConfig": {
+      "type": "object",
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "operationIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "excludeTags": {
+          "description": "Operations with one of these tags are left out.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "excludeOperationIds": {
+          "description": "Operations with one of these `operationId`s are left out.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false
+    },
+    "NamingConfig": {
+      "type": "object",
+      "properties": {
+        "overrides": {
+          "description": "Preferred names per JSON Pointer (such as `#/components/schemas/Error`), for every language;\neach language's naming rules still apply.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "RuntimeConfig": {
+      "description": "Where generated code finds its runtime.",
+      "oneOf": [
+        {
+          "description": "The package of the language's registry.",
+          "type": "string",
+          "const": "package"
+        },
+        {
+          "description": "A copy of the runtime in the output.",
+          "type": "string",
+          "const": "vendor"
+        }
+      ]
+    },
+    "HooksConfig": {
+      "description": "External command hooks (design.md chapter 11). Commands run in the directory of the file they are written in.",
+      "type": "object",
+      "properties": {
+        "transformDocument": {
+          "description": "Receives the root definition as JSON on stdin and returns the transformed definition on stdout.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Commands"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transformModel": {
+          "description": "Receives the model as JSON on stdin and returns the transformed model on stdout\n(design.md 18.4.6). The JSON form is versioned by `semVersion`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Commands"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extend": {
+          "description": "Receives the model, the manifest of what the backend generated and the generated-file marker\nas JSON on stdin, and returns files to add (`[{ path, contents }]`) on stdout. Each added file\nmust start with the marker.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Commands"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transformFiles": {
+          "description": "Receives the output files as JSON on stdin and returns the transformed list on stdout.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Commands"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "afterWrite": {
+          "description": "Runs after writing. `{output}` is replaced with the output directory.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Commands"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Commands": {
+      "description": "One command or a list of commands, each written as `[program, ...args]`.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "PluginConfig": {
+      "description": "A plugin module.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "module": {
+              "type": "string"
+            },
+            "runtime": {
+              "description": "The command that runs the module, before the runner's arguments (default `[node]`).",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "module"
+          ]
+        }
+      ]
+    },
+    "TypeScriptConfig": {
+      "description": "The `typescript` section (design.md 18.10).",
+      "type": "object",
+      "properties": {
+        "layout": {
+          "description": "How generated code is split into files (default `split`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LayoutConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "importExtension": {
+          "description": "Extension of relative imports in generated code (default `js`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImportExtensionConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumStyle": {
+          "description": "How string enums are emitted (default `union`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EnumStyleConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validators": {
+          "description": "Emit schemas for response validation under `zod/` (default: none). Only `zod` (Zod 4).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValidatorsConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validatorConstraints": {
+          "description": "Also check the definition's constraints (`minLength`, `maximum`, `pattern`, `minItems`, ...)\nand more formats (`uri`, `date`, ...) in the validation schemas (default false).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "query": {
+          "description": "Emit query and mutation options with typed query keys under `query/` (default: none). Only\n`tanstack` (TanStack Query 5).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QueryConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "infiniteQueries": {
+          "description": "Pagination per operation id for infinite query options (with `query: tanstack`); wins over\n`x-tsurara-pagination` in the definition.",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/InfiniteQueryConfig"
+          }
+        },
+        "mocks": {
+          "description": "Emit mock factories and request handlers under `mocks/` (default: none): `msw` for MSW\nhandlers, `fetch` for routes of `mockFetch` (`@tsurara/client/testing`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MocksConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "aggregateMaps": {
+          "description": "Emit `paths.ts` and `operations.ts` for generic clients (default false).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "clientModule": {
+          "description": "Module name of the runtime library (default `@tsurara/client`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "typeMappings": {
+          "description": "Replaces the emitted type per `format`.",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/TypeConfig"
+          }
+        },
+        "overrides": {
+          "description": "Replaces the emitted type per JSON Pointer (such as `#/components/schemas/Uuid`).",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/TypeConfig"
+          }
+        },
+        "naming": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TypeScriptNamingConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "LayoutConfig": {
+      "type": "string",
+      "enum": [
+        "split",
+        "tags",
+        "single"
+      ]
+    },
+    "ImportExtensionConfig": {
+      "type": "string",
+      "enum": [
+        "js",
+        "ts",
+        "none"
+      ]
+    },
+    "EnumStyleConfig": {
+      "type": "string",
+      "enum": [
+        "union",
+        "const"
+      ]
+    },
+    "ValidatorsConfig": {
+      "type": "string",
+      "enum": [
+        "zod"
+      ]
+    },
+    "QueryConfig": {
+      "type": "string",
+      "enum": [
+        "tanstack"
+      ]
+    },
+    "InfiniteQueryConfig": {
+      "description": "How a read is paginated, for its infinite query options.",
+      "type": "object",
+      "properties": {
+        "param": {
+          "description": "The parameter that carries the page: its `in`, a dot and its name (`query.cursor`).",
+          "type": "string"
+        },
+        "initial": {
+          "description": "The value of the first page (default: the parameter is left out of the first request)."
+        },
+        "next": {
+          "description": "JSON Pointer to the next page's value in a success body (`/nextCursor`); absent or `null` there\nends the query. Without it, the app gives `getNextPageParam`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "previous": {
+          "description": "JSON Pointer to the previous page's value.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "param"
+      ]
+    },
+    "MocksConfig": {
+      "type": "string",
+      "enum": [
+        "msw",
+        "fetch"
+      ]
+    },
+    "TypeConfig": {
+      "description": "A type of the target language, either as code or with the import it needs.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/TypeObject"
+        }
+      ]
+    },
+    "TypeObject": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type expression.",
+          "type": "string"
+        },
+        "import": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImportConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ]
+    },
+    "ImportConfig": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "description": "Module specifier (TypeScript: paths starting with `.` are relative to this file; Go: the\nimport path).",
+          "type": "string"
+        },
+        "name": {
+          "description": "Exported name. Defaults to `type`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "from"
+      ]
+    },
+    "TypeScriptNamingConfig": {
+      "type": "object",
+      "properties": {
+        "overrides": {
+          "description": "TypeScript identifiers per JSON Pointer, used as they are.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "schemaCase": {
+          "description": "How schema names are converted (default `preserve`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NameCaseConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "NameCaseConfig": {
+      "type": "string",
+      "enum": [
+        "preserve",
+        "pascal"
+      ]
+    },
+    "PythonConfig": {
+      "description": "The `python` section (design.md 18.10).",
+      "type": "object",
+      "properties": {
+        "strictEnums": {
+          "description": "Enums and discriminators reject values the definition does not list, instead of keeping them\nwhere values are received (default false).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "mocks": {
+          "description": "Emit mock values and routes for `MockRouter` in the subpackage `mocks` (default false).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "RustConfig": {
+      "description": "The `rust` section (docs/languages/rust.md).",
+      "type": "object",
+      "properties": {
+        "runtimeCrate": {
+          "description": "The path generated code uses for the runtime crate (default `tsurara_client`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mocks": {
+          "description": "Emit mock values and routes for `MockTransport` in the module `mocks`, compiled for tests and\nwith the crate feature `mocks` (default false).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "typeMappings": {
+          "description": "Replaces the emitted type per `format`: a type path (`chrono::DateTime<chrono::Utc>`).",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/TypeConfig"
+          }
+        },
+        "overrides": {
+          "description": "Replaces the emitted type per JSON Pointer (such as `#/components/schemas/Uuid`).",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/TypeConfig"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "GoConfig": {
+      "description": "The `go` section (docs/languages/go.md).",
+      "type": "object",
+      "properties": {
+        "package": {
+          "description": "The package name of the generated files (default: the output directory's name, as a Go\nidentifier).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "runtimeModule": {
+          "description": "The import path of the runtime module (default `github.com/tsurara-openapi/tsurara/runtimes/go`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "typeMappings": {
+          "description": "Replaces the emitted type per `format`: a type, with the import path of its package\n(`{ type: time.Time, import: { from: time } }`).",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/TypeConfig"
+          }
+        },
+        "overrides": {
+          "description": "Replaces the emitted type per JSON Pointer (such as `#/components/schemas/Uuid`).",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/TypeConfig"
+          }
+        },
+        "mocks": {
+          "description": "Emit mock values and routes for `tsuraratest` in files built with the tag `tsurara_mocks`\n(default false).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

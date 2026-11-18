@@ -1,0 +1,27 @@
+name: Feature request
+description: Something tsurara should generate or do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you are building and what you write by hand today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: The generated code, configuration or CLI behavior you have in mind. A short example helps.
+    validations:
+      required: true
+  - type: input
+    id: context
+    attributes:
+      label: Language and OpenAPI version
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Workarounds you use now, or how other tools solve it.

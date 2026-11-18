@@ -1,0 +1,11 @@
+{
+  "name": "tsurara-example-pnpm-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.18.0",
+  "scripts": {
+    "generate": "pnpm --filter @acme/openapi generate",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  }
+}

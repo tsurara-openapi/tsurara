@@ -1,0 +1,35 @@
+name: Weekly
+
+# Checks too slow for every push (design.md chapter 13): many random definitions through every
+# checker with a new seed. The real-world definitions compile as Rust on every push
+#.
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  properties:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TSURARA_REQUIRE_CHECKERS: typescript,python,rust,go
+      TSURARA_PROPTEST_CASES: "2000"
+      TSURARA_PROPTEST_SEED: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project runtimes/python --locked
+      - run: cargo test --release -p tsurara-cli --test properties
+      - if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: proptest-failures
+          path: target/proptest-failures

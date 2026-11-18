@@ -1,0 +1,2217 @@
+[
+  {
+    "name": "path simple string",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "simple"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": "blue"
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/blue",
+      "body": null
+    }
+  },
+  {
+    "name": "path simple array",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "simple"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/blue,black,brown",
+      "body": null
+    }
+  },
+  {
+    "name": "path simple explode array",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "simple",
+            "explode": true
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/blue,black,brown",
+      "body": null
+    }
+  },
+  {
+    "name": "path simple object",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "simple"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": {
+          "R": 100,
+          "G": 200,
+          "B": 150
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/R,100,G,200,B,150",
+      "body": null
+    }
+  },
+  {
+    "name": "path simple explode object",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "simple",
+            "explode": true
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": {
+          "R": 100,
+          "G": 200,
+          "B": 150
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/R=100,G=200,B=150",
+      "body": null
+    }
+  },
+  {
+    "name": "path label string",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "label"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": "blue"
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/.blue",
+      "body": null
+    }
+  },
+  {
+    "name": "path label array",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "label"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/.blue,black,brown",
+      "body": null
+    }
+  },
+  {
+    "name": "path label explode array",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "label",
+            "explode": true
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/.blue.black.brown",
+      "body": null
+    }
+  },
+  {
+    "name": "path label object",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "label"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": {
+          "R": 100,
+          "G": 200,
+          "B": 150
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/.R,100,G,200,B,150",
+      "body": null
+    }
+  },
+  {
+    "name": "path label explode object",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "label",
+            "explode": true
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": {
+          "R": 100,
+          "G": 200,
+          "B": 150
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/.R=100.G=200.B=150",
+      "body": null
+    }
+  },
+  {
+    "name": "path matrix string",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "matrix"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": "blue"
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/;color=blue",
+      "body": null
+    }
+  },
+  {
+    "name": "path matrix array",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "matrix"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/;color=blue,black,brown",
+      "body": null
+    }
+  },
+  {
+    "name": "path matrix explode array",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "matrix",
+            "explode": true
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/;color=blue;color=black;color=brown",
+      "body": null
+    }
+  },
+  {
+    "name": "path matrix object",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "matrix"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": {
+          "R": 100,
+          "G": 200,
+          "B": 150
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/;color=R,100,G,200,B,150",
+      "body": null
+    }
+  },
+  {
+    "name": "path matrix explode object",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{color}",
+      "params": {
+        "path": {
+          "color": {
+            "style": "matrix",
+            "explode": true
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "color": {
+          "R": 100,
+          "G": 200,
+          "B": 150
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/;R=100;G=200;B=150",
+      "body": null
+    }
+  },
+  {
+    "name": "path values are percent-encoded",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/pets/{id}/x",
+      "params": {
+        "path": {
+          "id": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "id": "a/b c"
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/pets/a%2Fb%20c/x",
+      "body": null
+    }
+  },
+  {
+    "name": "path allowReserved keeps reserved characters",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/files/{p}",
+      "params": {
+        "path": {
+          "p": {
+            "allowReserved": true
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "p": "a/b"
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/files/a/b",
+      "body": null
+    }
+  },
+  {
+    "name": "path content parameters are serialized as JSON",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x/{f}",
+      "params": {
+        "path": {
+          "f": {
+            "contentType": "application/json"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "f": {
+          "a": 1
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x/%7B%22a%22%3A1%7D",
+      "body": null
+    }
+  },
+  {
+    "name": "query form string",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "color": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "color": "blue"
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?color=blue",
+      "body": null
+    }
+  },
+  {
+    "name": "query form array",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "color": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?color=blue&color=black&color=brown",
+      "body": null
+    }
+  },
+  {
+    "name": "query form array without explode",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "color": {
+            "explode": false
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?color=blue,black,brown",
+      "body": null
+    }
+  },
+  {
+    "name": "query form object",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "color": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "color": {
+          "R": 100,
+          "G": 200,
+          "B": 150
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?R=100&G=200&B=150",
+      "body": null
+    }
+  },
+  {
+    "name": "query form object without explode",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "color": {
+            "explode": false
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "color": {
+          "R": 100,
+          "G": 200,
+          "B": 150
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?color=R,100,G,200,B,150",
+      "body": null
+    }
+  },
+  {
+    "name": "query spaceDelimited",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "color": {
+            "style": "spaceDelimited",
+            "explode": false
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?color=blue%20black%20brown",
+      "body": null
+    }
+  },
+  {
+    "name": "query pipeDelimited",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "color": {
+            "style": "pipeDelimited",
+            "explode": false
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "color": ["blue", "black", "brown"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?color=blue|black|brown",
+      "body": null
+    }
+  },
+  {
+    "name": "query deepObject",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "color": {
+            "style": "deepObject",
+            "explode": true,
+            "type": {
+              "ref": "Rgb"
+            }
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "color": {
+          "R": 100,
+          "G": 200,
+          "B": 150
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?color%5BR%5D=100&color%5BG%5D=200&color%5BB%5D=150",
+      "body": null
+    }
+  },
+  {
+    "name": "query deepObject nests",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "f": {
+            "style": "deepObject",
+            "explode": true
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "f": {
+          "a": {
+            "b": 1
+          }
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?f%5Ba%5D%5Bb%5D=1",
+      "body": null
+    }
+  },
+  {
+    "name": "query null is empty and missing values are omitted",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "query": {
+          "a": {},
+          "b": {},
+          "c": {},
+          "d": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "query": {
+        "b": null,
+        "c": "x y",
+        "d": true
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?b=&c=x%20y&d=true",
+      "body": null
+    }
+  },
+  {
+    "name": "querystring urlencoded (3.2)",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "querystring": {
+          "contentType": "application/x-www-form-urlencoded"
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "querystring": {
+        "a": 1,
+        "b": ["x", "y"]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?a=1&b=x&b=y",
+      "body": null
+    }
+  },
+  {
+    "name": "querystring JSON (3.2)",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/q",
+      "params": {
+        "querystring": {
+          "contentType": "application/json"
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "querystring": {
+        "a": 1
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/q?%7B%22a%22%3A1%7D",
+      "body": null
+    }
+  },
+  {
+    "name": "header parameters",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "params": {
+        "headers": {
+          "X-N": {},
+          "X-L": {},
+          "X-O": {},
+          "X-E": {
+            "explode": true
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "headers": {
+        "X-N": 5,
+        "X-L": [3, 4, 5],
+        "X-O": {
+          "role": "admin",
+          "first": "Alex"
+        },
+        "X-E": {
+          "role": "admin",
+          "first": "Alex"
+        }
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "x-n": "5",
+        "x-l": "3,4,5",
+        "x-o": "role,admin,first,Alex",
+        "x-e": "role=admin,first=Alex"
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "cookie parameters",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "params": {
+        "cookies": {
+          "id": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "cookies": {
+        "id": 5
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "cookie": "id=5"
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "cookie arrays without explode",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "params": {
+        "cookies": {
+          "id": {
+            "explode": false
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "cookies": {
+        "id": [3, 4]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "cookie": "id=3,4"
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "cookie arrays with explode",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "params": {
+        "cookies": {
+          "id": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "cookies": {
+        "id": [3, 4]
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "cookie": "id=3; id=4"
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "JSON body",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "POST",
+      "path": "/x",
+      "body": {
+        "required": true,
+        "contents": {
+          "application/json": {
+            "type": {
+              "ref": "Thing"
+            }
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "body": {
+        "a": 1
+      }
+    },
+    "expect": {
+      "method": "POST",
+      "url": "https://api.test/x",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "{\"a\":1}"
+      }
+    }
+  },
+  {
+    "name": "the requested media type wins",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "POST",
+      "path": "/x",
+      "body": {
+        "required": true,
+        "contents": {
+          "application/json": {},
+          "text/plain": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "body": "hi",
+      "contentType": "text/plain"
+    },
+    "expect": {
+      "method": "POST",
+      "url": "https://api.test/x",
+      "headers": {
+        "content-type": "text/plain"
+      },
+      "body": {
+        "text": "hi"
+      }
+    }
+  },
+  {
+    "name": "no body is sent when body is omitted",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "PATCH",
+      "path": "/x",
+      "body": {
+        "required": false,
+        "contents": {
+          "application/json": {},
+          "text/plain": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "contentType": "text/plain"
+    },
+    "expect": {
+      "method": "PATCH",
+      "url": "https://api.test/x",
+      "headers": {
+        "content-type": null
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "urlencoded body",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "POST",
+      "path": "/x",
+      "body": {
+        "required": true,
+        "contents": {
+          "application/x-www-form-urlencoded": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "body": {
+        "name": "a b",
+        "tags": ["x", "y"]
+      }
+    },
+    "expect": {
+      "method": "POST",
+      "url": "https://api.test/x",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      "body": {
+        "text": "name=a+b&tags=x&tags=y"
+      }
+    }
+  },
+  {
+    "name": "multipart appends array items one by one and follows encoding",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "POST",
+      "path": "/x",
+      "body": {
+        "required": true,
+        "contents": {
+          "multipart/form-data": {
+            "encoding": {
+              "meta": {
+                "contentType": "application/json"
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "body": {
+        "file": {
+          "$file": {
+            "name": "a.txt",
+            "type": "text/plain",
+            "text": "hello"
+          }
+        },
+        "tags": ["x", "y"],
+        "meta": {
+          "a": 1
+        },
+        "n": 3
+      }
+    },
+    "expect": {
+      "method": "POST",
+      "url": "https://api.test/x",
+      "body": {
+        "form": [
+          [
+            "file",
+            {
+              "$file": {
+                "name": "a.txt",
+                "type": "text/plain",
+                "text": "hello"
+              }
+            }
+          ],
+          ["tags", "x"],
+          ["tags", "y"],
+          [
+            "meta",
+            {
+              "$blob": {
+                "type": "application/json",
+                "text": "{\"a\":1}"
+              }
+            }
+          ],
+          ["n", "3"]
+        ]
+      }
+    }
+  },
+  {
+    "name": "binary body",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "POST",
+      "path": "/x",
+      "body": {
+        "required": true,
+        "contents": {
+          "application/octet-stream": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "body": {
+        "$blob": {
+          "type": "image/png",
+          "text": "x"
+        }
+      }
+    },
+    "expect": {
+      "method": "POST",
+      "url": "https://api.test/x",
+      "headers": {
+        "content-type": "application/octet-stream"
+      },
+      "body": {
+        "bytes": {
+          "type": "image/png",
+          "text": "x"
+        }
+      }
+    }
+  },
+  {
+    "name": "binary body with a wildcard takes the Blob's type",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "POST",
+      "path": "/x",
+      "body": {
+        "required": true,
+        "contents": {
+          "image/*": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "body": {
+        "$blob": {
+          "type": "image/png",
+          "text": "x"
+        }
+      }
+    },
+    "expect": {
+      "method": "POST",
+      "url": "https://api.test/x",
+      "headers": {
+        "content-type": "image/png"
+      },
+      "body": {
+        "bytes": {
+          "type": "image/png",
+          "text": "x"
+        }
+      }
+    }
+  },
+  {
+    "name": "wildcard bodies send binary values as is",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "POST",
+      "path": "/x",
+      "body": {
+        "required": true,
+        "contents": {
+          "*/*": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "body": {
+        "$blob": {
+          "type": "application/pdf",
+          "text": "%PDF"
+        }
+      }
+    },
+    "expect": {
+      "method": "POST",
+      "url": "https://api.test/x",
+      "headers": {
+        "content-type": "application/pdf"
+      },
+      "body": {
+        "bytes": {
+          "type": "application/pdf",
+          "text": "%PDF"
+        }
+      }
+    }
+  },
+  {
+    "name": "wildcard bodies send other values as JSON",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "POST",
+      "path": "/x",
+      "body": {
+        "required": true,
+        "contents": {
+          "application/*": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "body": {
+        "a": 1
+      }
+    },
+    "expect": {
+      "method": "POST",
+      "url": "https://api.test/x",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "{\"a\":1}"
+      }
+    }
+  },
+  {
+    "name": "binary values are not sent as JSON",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "POST",
+      "path": "/x",
+      "body": {
+        "required": true,
+        "contents": {
+          "application/json": {}
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "body": {
+        "$blob": {
+          "type": "application/pdf",
+          "text": "%PDF"
+        }
+      }
+    },
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  },
+  {
+    "name": "path values that are a dot dot segment are refused",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/users/{id}/profile",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      },
+      "params": {
+        "path": {
+          "id": {}
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "id": ".."
+      }
+    },
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  },
+  {
+    "name": "path values that are a dot segment are refused",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/users/{id}/profile",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      },
+      "params": {
+        "path": {
+          "id": {}
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "id": "."
+      }
+    },
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  },
+  {
+    "name": "path values that are an empty segment are refused",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/users/{id}/profile",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      },
+      "params": {
+        "path": {
+          "id": {}
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "id": ""
+      }
+    },
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  },
+  {
+    "name": "percent signs in path values are encoded, so %2e is not a dot segment",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/users/{id}/profile",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      },
+      "params": {
+        "path": {
+          "id": {}
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "id": "%2e%2E"
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/users/%252e%252E/profile",
+      "body": null
+    }
+  },
+  {
+    "name": "path values with allowReserved cannot add dot segments",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/files/{p}",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      },
+      "params": {
+        "path": {
+          "p": {
+            "allowReserved": true
+          }
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "p": "a/../b"
+      }
+    },
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  },
+  {
+    "name": "missing path values are refused",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/users/{id}/profile",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      },
+      "params": {
+        "path": {
+          "id": {}
+        }
+      }
+    },
+    "input": {},
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  },
+  {
+    "name": "path values containing dots in a longer segment are sent",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/users/{id}/profile",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      },
+      "params": {
+        "path": {
+          "id": {}
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "id": "a..b%2e%2e"
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/users/a..b%252e%252e/profile",
+      "body": null
+    }
+  },
+  {
+    "name": "path values with reserved characters are encoded",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/users/{id}/profile",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      },
+      "params": {
+        "path": {
+          "id": {}
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "id": "a?b#c"
+      }
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/users/a%3Fb%23c/profile",
+      "body": null
+    }
+  },
+  {
+    "name": "security: API key in a header",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [
+          {
+            "scheme": "api_key",
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-Api-Key"
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {
+      "api_key": "k1"
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "x-api-key": "k1"
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "security: API key in the query",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [
+          {
+            "scheme": "q_key",
+            "type": "apiKey",
+            "in": "query",
+            "name": "key"
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {
+      "q_key": "a b"
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x?key=a%20b",
+      "body": null
+    }
+  },
+  {
+    "name": "security: API key in a cookie",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [
+          {
+            "scheme": "c_key",
+            "type": "apiKey",
+            "in": "cookie",
+            "name": "session"
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {
+      "c_key": "s1"
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "cookie": "session=s1"
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "security: bearer",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [
+          {
+            "scheme": "token",
+            "type": "http",
+            "httpScheme": "bearer"
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {
+      "token": "t0k"
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "authorization": "Bearer t0k"
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "security: basic encodes user:password",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [
+          {
+            "scheme": "basic",
+            "type": "http",
+            "httpScheme": "basic"
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {
+      "basic": "user:pässword"
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "authorization": "Basic dXNlcjpww6Rzc3dvcmQ="
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "security: OAuth 2 sends a bearer token",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [
+          {
+            "scheme": "oauth",
+            "type": "oauth2",
+            "scopes": ["read:pets"]
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {
+      "oauth": "at"
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "authorization": "Bearer at"
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "security: the first alternative with every credential is used",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [
+          {
+            "scheme": "api_key",
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-Api-Key"
+          },
+          {
+            "scheme": "token",
+            "type": "http",
+            "httpScheme": "bearer"
+          }
+        ],
+        [
+          {
+            "scheme": "q_key",
+            "type": "apiKey",
+            "in": "query",
+            "name": "key"
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {
+      "api_key": "k1",
+      "q_key": "k2"
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x?key=k2",
+      "headers": {
+        "x-api-key": null,
+        "authorization": null
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "security: schemes of one alternative are all applied",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [
+          {
+            "scheme": "api_key",
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-Api-Key"
+          },
+          {
+            "scheme": "token",
+            "type": "http",
+            "httpScheme": "bearer"
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {
+      "api_key": "k1",
+      "token": "t"
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "x-api-key": "k1",
+        "authorization": "Bearer t"
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "security: without credentials nothing is sent",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [
+          {
+            "scheme": "api_key",
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-Api-Key"
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {},
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "x-api-key": null
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "security: an empty alternative means no authentication",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "security": [
+        [],
+        [
+          {
+            "scheme": "api_key",
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-Api-Key"
+          }
+        ]
+      ],
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "credentials": {
+      "api_key": "k1"
+    },
+    "expect": {
+      "method": "GET",
+      "url": "https://api.test/x",
+      "headers": {
+        "x-api-key": null
+      },
+      "body": null
+    }
+  },
+  {
+    "name": "a path without a leading slash is not sent (userinfo)",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "@evil.example/x",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  },
+  {
+    "name": "a path without a leading slash is not sent (host suffix)",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": ".evil.example/x",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  },
+  {
+    "name": "a path without a leading slash is not sent (port)",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": ":8443/x",
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {},
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  },
+  {
+    "name": "a path that starts with a parameter is not sent",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "{p}/x",
+      "params": {
+        "path": {
+          "p": {
+            "style": "simple"
+          }
+        }
+      },
+      "responses": {
+        "204": {
+          "parseAs": "none"
+        }
+      }
+    },
+    "input": {
+      "path": {
+        "p": "evil.example"
+      }
+    },
+    "expect": {
+      "kind": "unexpected",
+      "sent": false
+    }
+  }
+]

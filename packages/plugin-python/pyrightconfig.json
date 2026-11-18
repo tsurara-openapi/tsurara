@@ -1,0 +1,12 @@
+{
+  "include": ["src", "tests"],
+  "exclude": ["src/tsurara_plugin/protocol"],
+  "pythonVersion": "3.11",
+  "venvPath": ".",
+  "venv": ".venv",
+  "strict": [
+    "src/tsurara_plugin/__init__.py",
+    "src/tsurara_plugin/write.py",
+    "src/tsurara_plugin/testing.py"
+  ]
+}

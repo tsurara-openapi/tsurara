@@ -1,0 +1,15 @@
+[package]
+name = "tsurara-testkit"
+description = "Test helpers for tsurara (not published)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+serde_json.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

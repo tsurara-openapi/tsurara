@@ -1,0 +1,50 @@
+# Multipart bodies: binary parts, arrays of them, oneOf parts, encoding, and named forms.
+openapi: 3.1.0
+info: { title: multipart, version: "1" }
+paths:
+  /upload:
+    post:
+      operationId: upload
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                files: { type: array, items: { type: string, format: binary } }
+                meta:
+                  oneOf:
+                    - { type: object, properties: { a: { type: string } } }
+                    - { type: string }
+                tags: { type: array, items: { type: string } }
+            encoding:
+              meta: { contentType: application/json }
+      responses: { "204": { description: ok } }
+  /attach:
+    post:
+      operationId: attach
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/NewAttachment" }
+      responses:
+        "201":
+          description: created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Attachment" }
+components:
+  schemas:
+    NewAttachment:
+      type: object
+      required: [file]
+      properties:
+        file: { type: string, format: binary }
+        note: { type: string }
+    Attachment:
+      type: object
+      properties:
+        name: { type: string }
+        content: { type: string, contentEncoding: base64 }

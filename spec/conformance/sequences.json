@@ -1,0 +1,165 @@
+[
+  {
+    "name": "events with JSON data, split across chunks",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": { "200": { "parseAs": "events", "jsonEvents": true } }
+    },
+    "response": {
+      "status": 200,
+      "headers": { "content-type": "text/event-stream" },
+      "chunks": [
+        "event: note\r\ndata: {\"id\":",
+        "\"1\"}\r\nid: 7\r",
+        "\nretry: 3000\r\n\r\n: comment\n\nevent: note\ndata: {\"id\"\ndata: :\"2\"}\n\n"
+      ]
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "items": [
+        { "event": "note", "data": { "id": "1" }, "id": "7", "retry": 3000 },
+        { "event": "note", "data": { "id": "2" } }
+      ]
+    }
+  },
+  {
+    "name": "events with JSON data for some names",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": { "200": { "parseAs": "events", "jsonEvents": ["note"] } }
+    },
+    "response": {
+      "status": 200,
+      "headers": { "content-type": "text/event-stream" },
+      "chunks": [
+        "event: note\ndata: {\"id\":\"1\"}\n\nevent: ping\ndata: {\"id\":\"1\"}\n\ndata: plain\n\n"
+      ]
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "items": [
+        { "event": "note", "data": { "id": "1" } },
+        { "event": "ping", "data": "{\"id\":\"1\"}" },
+        { "event": "message", "data": "plain" }
+      ]
+    }
+  },
+  {
+    "name": "events without data, unknown fields and a trailing partial event are skipped",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": { "200": { "parseAs": "events" } }
+    },
+    "response": {
+      "status": 200,
+      "headers": { "content-type": "text/event-stream" },
+      "chunks": [
+        "event: ping\n\nretry: x\nfoo: bar\ndata:  two spaces\nid: a\u0000b\n\nevent: last\ndata: never"
+      ]
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "items": [{ "event": "message", "data": " two spaces" }]
+    }
+  },
+  {
+    "name": "an event whose JSON data is invalid ends the iteration with an error",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": { "200": { "parseAs": "events", "jsonEvents": true } }
+    },
+    "response": {
+      "status": 200,
+      "headers": { "content-type": "text/event-stream" },
+      "chunks": ["data: 1\n\ndata: {\n\ndata: 3\n\n"]
+    },
+    "expect": {
+      "kind": "success",
+      "status": 200,
+      "items": [{ "event": "message", "data": 1 }],
+      "error": true
+    }
+  },
+  {
+    "name": "JSON Lines",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": { "200": { "parseAs": "jsonLines" } }
+    },
+    "response": {
+      "status": 200,
+      "headers": { "content-type": "application/jsonl" },
+      "chunks": ["{\"a\":1}\n\n{\"a\"", ":2}\r", "\n  \n3\r\"end\""]
+    },
+    "expect": { "kind": "success", "status": 200, "items": [{ "a": 1 }, { "a": 2 }, 3, "end"] }
+  },
+  {
+    "name": "a JSON line that is invalid ends the iteration with an error",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": { "200": { "parseAs": "jsonLines" } }
+    },
+    "response": {
+      "status": 200,
+      "headers": { "content-type": "application/jsonl" },
+      "chunks": ["1\n{\n3\n"]
+    },
+    "expect": { "kind": "success", "status": 200, "items": [1], "error": true }
+  },
+  {
+    "name": "JSON text sequence",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": { "200": { "parseAs": "jsonSeq" } }
+    },
+    "response": {
+      "status": 200,
+      "headers": { "content-type": "application/json-seq" },
+      "chunks": ["junk\u001e{\"a\":\n1}\n\u001e", "\u001e[1,", "2]\n\u001e\"x\"\n"]
+    },
+    "expect": { "kind": "success", "status": 200, "items": [{ "a": 1 }, [1, 2], "x"] }
+  },
+  {
+    "name": "an error status of a stream operation is read as documented",
+    "operation": {
+      "v": 1,
+      "id": "op",
+      "method": "GET",
+      "path": "/x",
+      "responses": {
+        "200": { "parseAs": "events", "jsonEvents": true },
+        "400": { "parseAs": "json" }
+      }
+    },
+    "response": {
+      "status": 400,
+      "headers": { "content-type": "application/json" },
+      "chunks": ["{\"m\":", "\"x\"}"]
+    },
+    "expect": { "kind": "http", "status": 400, "documented": true, "error": { "m": "x" } }
+  }
+]

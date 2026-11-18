@@ -1,0 +1,190 @@
+# Keywords outside the mapping table of 007.
+
+- name: type arrays (3.1)
+  schema: { type: [string, number, "null"] }
+  expect: string | number | null
+
+- name: type arrays share the other keywords
+  schema:
+    type: [object, "null"]
+    required: [a]
+    properties:
+      a: { type: string }
+  expect: "{ a: string } | null"
+
+- name: integer and boolean
+  schemas:
+    I: { type: integer, format: int64 }
+    B: { type: boolean }
+    N: { type: "null" }
+  expect:
+    I: number
+    B: boolean
+    N: "null"
+
+- name: ref to a component
+  schemas:
+    Pet: { type: object, properties: { owner: { $ref: "#/components/schemas/Owner" } } }
+    Owner: { type: string }
+  expect:
+    Pet: "{ owner?: Owner }"
+    Owner: string
+
+- name: component aliases stay named
+  schemas:
+    Alias: { $ref: "#/components/schemas/Target" }
+    Target: { type: string }
+  expect:
+    Alias: Target
+
+- name: ref with annotation siblings (3.1) is just the ref
+  schemas:
+    A: { $ref: "#/components/schemas/B", description: "x", readOnly: false }
+    B: { type: string }
+  expect:
+    A: B
+
+- name: ref with assertion siblings (3.1) is an intersection
+  schemas:
+    A:
+      $ref: "#/components/schemas/B"
+      required: [b]
+      properties:
+        b: { type: number }
+    B: { type: object, properties: { a: { type: string } } }
+  expect:
+    A: "B & { b: number }"
+
+- name: ref siblings are ignored in 3.0
+  openapi: 3.0.3
+  schemas:
+    A: { $ref: "#/components/schemas/B", properties: { b: { type: number } } }
+    B: { type: string }
+  expect:
+    A: B
+
+- name: refs to $defs
+  schemas:
+    A:
+      $defs:
+        Inner: { type: string }
+      type: object
+      properties:
+        i: { $ref: "#/components/schemas/A/$defs/Inner" }
+  expect:
+    A: "{ i?: Inner }"
+    Inner: string
+
+# x-tsurara-type maps each language to a type (design.md 18.4.4).
+- name: x-tsurara-type as a string
+  schema: { type: string, x-tsurara-type: { typescript: "`${number}px`" } }
+  expect: "`${number}px`"
+
+- name: x-tsurara-type with an import
+  schema:
+    type: string
+    x-tsurara-type:
+      { typescript: { type: Uuid, import: { from: ./brand.js, name: Uuid } }, rust: uuid::Uuid }
+  expect: Uuid
+
+- name: x-tsurara-type in the flat form is ignored with a warning
+  schema: { type: string, x-tsurara-type: Uuid }
+  expect: string
+  warnings: ["invalid-definition #/components/schemas/T/x-tsurara-type"]
+
+- name: dynamicRef is resolved statically per reference
+  schemas:
+    Page:
+      $id: https://example.com/page
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $dynamicRef: "#item" } }
+      $defs:
+        item: { $dynamicAnchor: item }
+    PetPage:
+      $id: https://example.com/pet-page
+      $ref: page
+      $defs:
+        # Inside a resource with $id, so the reference resolves against $id.
+        item: { $dynamicAnchor: item, $ref: pet }
+    Pet: { $id: https://example.com/pet, type: object, properties: { name: { type: string } } }
+  expect:
+    Page: "{ items: unknown[] }"
+    PetPage: "{ items: Pet[] }"
+  warnings: ["dynamic-ref #/components/schemas/Page/properties/items/items"]
+
+- name: unresolved refs are unknown with a warning
+  schema: { $ref: "#/components/schemas/Missing" }
+  expect: unknown
+  warnings: ["unresolved-ref #/components/schemas/T"]
+
+- name: if/then/else is ignored with a warning
+  schema: { type: string, if: { minLength: 1 }, then: { maxLength: 2 } }
+  expect: string
+  warnings: ["unsupported #/components/schemas/T/if"]
+
+- name: object with only allOf has no index signature
+  schemas:
+    A: { type: object, allOf: [{ $ref: "#/components/schemas/B" }] }
+    B: { type: object, properties: { b: { type: string } } }
+  expect:
+    A: B
+
+- name: not keeps the type built from the other keywords
+  schema: { type: string, not: { const: "" } }
+  expect: string
+  warnings: ["unsupported #/components/schemas/T/not"]
+
+- name: not keeps the object type built from the other keywords
+  schema:
+    type: object
+    required: [id]
+    properties: { id: { type: integer } }
+    not: { required: [secret] }
+  expect: "{ id: number }"
+  warnings: ["unsupported #/components/schemas/T/not"]
+
+- name: dependentSchemas is ignored with a warning
+  schema:
+    type: object
+    properties: { card: { type: string } }
+    dependentSchemas:
+      card: { required: [billing] }
+  expect: "{ card?: string }"
+  warnings: ["unsupported #/components/schemas/T/dependentSchemas"]
+
+- name: siblings of $ref are ignored in 3.0 with a warning
+  openapi: 3.0.3
+  schemas:
+    A: { $ref: "#/components/schemas/P", nullable: true }
+    P: { type: string }
+  expect:
+    A: P
+  warnings: ["ignored-sibling #/components/schemas/A/nullable"]
+
+- name: annotations next to $ref in 3.0 are not warned about
+  openapi: 3.0.3
+  schemas:
+    A: { $ref: "#/components/schemas/P", description: "a P" }
+    P: { type: string }
+  expect:
+    A: P
+  warnings: []
+
+# 048: an acyclic `$ref` to a schema nested in a component still names that schema in TypeScript.
+- name: an acyclic reference to a nested property schema is a named type
+  schemas:
+    A:
+      {
+        type: object,
+        properties: { home: { $ref: "#/components/schemas/Person/properties/address" } },
+      }
+    Person:
+      type: object
+      properties:
+        address: { type: object, properties: { city: { type: string } } }
+  expect:
+    A: "{ home?: Address }"
+    Person: "{ address?: Address }"
+    Address: "{ city?: string }"

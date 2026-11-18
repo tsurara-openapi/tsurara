@@ -1,0 +1,34 @@
+# Swagger 2.0 references under keys named `default`: the `default` response and a property named
+# `default` are not default values, so their `$ref`s are rewritten too.
+swagger: "2.0"
+info: { title: swagger2 defaults, version: "1" }
+paths:
+  /things:
+    get:
+      operationId: listThings
+      produces: [application/json]
+      responses:
+        "200":
+          description: ok
+          schema: { type: array, items: { $ref: "#/definitions/Thing" } }
+        default:
+          description: error
+          schema: { $ref: "#/definitions/Error" }
+definitions:
+  Thing:
+    type: object
+    properties:
+      default: { $ref: "#/definitions/Quantity" }
+      limits:
+        type: object
+        properties:
+          default:
+            type: object
+            additionalProperties: { $ref: "#/definitions/Quantity" }
+      plain: { type: string, default: "x" }
+  Quantity: { type: string }
+  Error:
+    type: object
+    required: [message]
+    properties:
+      message: { type: string }

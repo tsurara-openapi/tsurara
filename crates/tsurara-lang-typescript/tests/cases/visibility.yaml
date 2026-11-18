@@ -1,0 +1,148 @@
+# 010 readOnly/writeOnly.
+
+- name: readOnly and writeOnly split the type
+  schemas:
+    User:
+      type: object
+      required: [id, name, password]
+      properties:
+        id: { type: integer, readOnly: true }
+        name: { type: string }
+        password: { type: string, writeOnly: true }
+  expect:
+    User: "{ id: number; name: string }"
+    UserWritable: "{ name: string; password: string }"
+  accept:
+    User: [{ id: 1, name: a }]
+    UserWritable: [{ name: a, password: p }]
+  reject:
+    User: [{ id: 1, name: a, password: p }]
+    UserWritable: [{ id: 1, name: a, password: p }, { name: a }]
+
+- name: schemas without readOnly or writeOnly have no Writable type
+  schemas:
+    Tag: { type: object, properties: { name: { type: string } } }
+  expect:
+    Tag: "{ name?: string }"
+
+- name: readOnly several references away creates Writable types along the way
+  schemas:
+    Order:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Line" } }
+        note: { type: string }
+    Line:
+      type: object
+      properties:
+        product: { $ref: "#/components/schemas/Product" }
+    Product:
+      type: object
+      properties:
+        id: { type: string, readOnly: true }
+        name: { type: string }
+  expect:
+    Order: "{ items?: Line[]; note?: string }"
+    OrderWritable: "{ items?: LineWritable[]; note?: string }"
+    Line: "{ product?: Product }"
+    LineWritable: "{ product?: ProductWritable }"
+    Product: "{ id?: string; name?: string }"
+    ProductWritable: "{ name?: string }"
+
+- name: readOnly on the referenced schema (3.0 style)
+  openapi: 3.0.3
+  schemas:
+    A:
+      type: object
+      properties:
+        created: { $ref: "#/components/schemas/Timestamp" }
+        b: { type: string }
+    Timestamp: { type: string, readOnly: true }
+  expect:
+    A: "{ created?: Timestamp; b?: string }"
+    AWritable: "{ b?: string }"
+
+- name: circular schemas with readOnly
+  schemas:
+    Node:
+      type: object
+      properties:
+        id: { type: string, readOnly: true }
+        next: { $ref: "#/components/schemas/Node" }
+  expect:
+    Node: "{ id?: string; next?: Node }"
+    NodeWritable: "{ next?: NodeWritable }"
+
+- name: splitting can be disabled
+  options: { splitVisibility: false }
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer, readOnly: true }
+        password: { type: string, writeOnly: true }
+  expect:
+    User: "{ id?: number; password?: string }"
+
+- name: readOnly is found through mutual references
+  schemas:
+    A:
+      type: object
+      properties:
+        child: { $ref: "#/components/schemas/B" }
+        id: { type: string, readOnly: true }
+    B:
+      type: object
+      properties:
+        parent: { $ref: "#/components/schemas/A" }
+  expect:
+    A: "{ child?: B; id?: string }"
+    AWritable: "{ child?: BWritable }"
+    B: "{ parent?: A }"
+    BWritable: "{ parent?: AWritable }"
+  accept:
+    A: [{ id: x, child: { parent: { id: y } } }]
+    AWritable: [{ child: { parent: { child: {} } } }]
+  reject:
+    AWritable: [{ id: x }, { child: { parent: { id: y } } }]
+    BWritable: [{ parent: { id: y } }]
+
+- name: readOnly through mutual references does not depend on property order
+  schemas:
+    A:
+      type: object
+      properties:
+        id: { type: string, readOnly: true }
+        child: { $ref: "#/components/schemas/B" }
+    B:
+      type: object
+      properties:
+        parent: { $ref: "#/components/schemas/A" }
+  expect:
+    A: "{ id?: string; child?: B }"
+    AWritable: "{ child?: BWritable }"
+    B: "{ parent?: A }"
+    BWritable: "{ parent?: AWritable }"
+
+- name: readOnly is found through a cycle of three schemas
+  schemas:
+    X:
+      type: object
+      properties:
+        y: { $ref: "#/components/schemas/Y" }
+    Y:
+      type: object
+      properties:
+        z: { $ref: "#/components/schemas/Z" }
+    Z:
+      type: object
+      properties:
+        x: { $ref: "#/components/schemas/X" }
+        secret: { type: string, writeOnly: true }
+  expect:
+    X: "{ y?: Y }"
+    XWritable: "{ y?: YWritable }"
+    Y: "{ z?: Z }"
+    YWritable: "{ z?: ZWritable }"
+    Z: "{ x?: X }"
+    ZWritable: "{ x?: XWritable; secret?: string }"

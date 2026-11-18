@@ -1,0 +1,193 @@
+openapi: 3.2.0
+info: { title: Kitchen sink, version: "1" }
+servers:
+  - url: "https://{env}.example.com/v1"
+    description: Main
+    variables:
+      env: { default: api, enum: [api, staging] }
+  - url: /relative
+paths:
+  /exports/{exportId}:
+    get:
+      operationId: getExport
+      parameters:
+        - { name: exportId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The export, in whatever format the server chose
+          content:
+            "*/*": { schema: { type: object, properties: { rows: { type: integer } } } }
+  /items/{itemId}:
+    parameters:
+      - { name: itemId, in: path, required: true, schema: { type: integer } }
+      - { name: X-Trace, in: header, schema: { type: string } }
+    get:
+      operationId: getItem
+      summary: Get an item
+      description: Returns one item.
+      tags: [items]
+      parameters:
+        - { name: fields, in: query, style: form, explode: false, schema: { type: array, items: { type: string } } }
+        - { name: filter, in: query, style: deepObject, explode: true, schema: { type: object, properties: { min: { type: integer } } } }
+        - { name: session, in: cookie, schema: { type: string } }
+        - name: meta
+          in: query
+          content:
+            application/json:
+              schema: { type: object, properties: { a: { type: string } } }
+        - { name: Accept, in: header, schema: { type: string } }
+      responses:
+        "200":
+          description: ok
+          headers:
+            X-Rate-Limit: { schema: { type: integer }, required: true, description: Requests left }
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/Item" } }
+            text/csv: { schema: { type: string } }
+        "304": { description: not modified }
+        "404":
+          description: missing
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } }
+        "5XX":
+          description: server error
+          content:
+            text/plain: { schema: { type: string } }
+        default:
+          description: error
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/Problem" } }
+    put:
+      operationId: replaceItem
+      tags: [items]
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/Item" } }
+          application/xml: { schema: { $ref: "#/components/schemas/Item" } }
+      responses:
+        "204": { description: done }
+  /items:
+    get:
+      tags: [items]
+      responses:
+        "2XX":
+          description: list
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Item" } }
+    post:
+      operationId: createItem
+      tags: [items]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                tags: { type: array, items: { type: string } }
+                meta: { type: object, properties: { a: { type: string } } }
+            encoding:
+              meta: { contentType: application/json }
+      callbacks:
+        onDone:
+          "{$request.body#/callbackUrl}":
+            post:
+              requestBody:
+                content:
+                  application/json: { schema: { $ref: "#/components/schemas/Item" } }
+              responses:
+                "200": { description: ok }
+      responses:
+        "201":
+          description: created
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/Item" } }
+    query:
+      operationId: searchItems
+      tags: [search]
+      parameters:
+        - name: q
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema: { type: object, properties: { text: { type: string } } }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/jsonl:
+              itemSchema: { $ref: "#/components/schemas/Item" }
+  /files/{name}:
+    get:
+      operationId: download
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: file
+          content:
+            application/octet-stream: { schema: { type: string, format: binary } }
+    additionalOperations:
+      COPY:
+        operationId: copyFile
+        parameters:
+          - { name: name, in: path, required: true, schema: { type: string } }
+        responses:
+          "201": { description: copied }
+  /events:
+    get:
+      operationId: events
+      responses:
+        "200":
+          description: stream
+          content:
+            text/event-stream: { schema: { type: string } }
+  /login:
+    post:
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [user, password]
+              properties:
+                user: { type: string }
+                password: { type: string, writeOnly: true }
+      responses:
+        default:
+          description: any
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/Session" } }
+webhooks:
+  itemChanged:
+    post:
+      requestBody:
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/Item" } }
+      responses:
+        "200": { description: ok }
+components:
+  schemas:
+    Item:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer, readOnly: true }
+        name: { type: string }
+        "@type": { const: item }
+        status: { $ref: "#/components/schemas/Status" }
+        owner: { $ref: "#/components/schemas/Error" }
+    Status: { type: string, enum: [active, archived] }
+    Problem:
+      type: object
+      properties:
+        title: { type: string }
+        detail: { type: string }
+    Error: { type: object, properties: { message: { type: string } } }
+    Session: { type: object, properties: { token: { type: string } } }

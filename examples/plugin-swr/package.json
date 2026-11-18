@@ -1,0 +1,10 @@
+{
+  "name": "@tsurara/example-plugin-swr",
+  "private": true,
+  "type": "module",
+  "description": "A tsurara plugin that writes SWR hooks (docs/guide/plugins.md)",
+  "devDependencies": {
+    "@tsurara/plugin": "workspace:*",
+    "swr": "2.3.8"
+  }
+}

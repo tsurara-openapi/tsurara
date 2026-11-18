@@ -1,0 +1,42 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.5/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/.venv",
+      "!**/.next",
+      "!**/next-env.d.ts",
+      "!target",
+      "!runtimes/rust/target",
+      "!**/src/generated",
+      "!crates/**/tests/**/*.snap",
+      "!**/*.md",
+      "!**/__snapshots__",
+      "!**/tests/fixtures",
+      "!schema/tsurara.config.schema.json",
+      "!spec/sem-model.schema.json",
+      "!spec/manifest.schema.json",
+      "!spec/plugin-protocol.schema.json",
+      "!spec/cli-output.schema.json",
+      "!runtimes/typescript/hermes/rn"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended"
+    }
+  }
+}

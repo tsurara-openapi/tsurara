@@ -1,0 +1,432 @@
+# Type mapping table of design.md 6.4. One or more cases per row.
+
+- name: "{} is unknown"
+  schema: {}
+  expect: unknown
+  accept: [1, a, null, { a: 1 }]
+  semantic: "any"
+
+- name: "true is unknown"
+  schema: true
+  expect: unknown
+  accept: [1, a, null, { a: 1 }]
+  semantic: "any"
+
+- name: "false is never"
+  schema: false
+  expect: never
+  reject: [1, null]
+  semantic: "never"
+
+- name: object without properties and additionalProperties
+  schema: { type: object }
+  expect: "{ [key: string]: unknown }"
+  accept: [{}, { a: 1 }]
+  reject: [a, null]
+  semantic: "{ [string]: any }"
+
+- name: additionalProperties false without properties
+  schema: { type: object, additionalProperties: false }
+  expect: "{ [key: string]: never }"
+  accept: [{}]
+  reject: [{ a: 1 }]
+  semantic: "{ [string]: never }"
+
+- name: properties without additionalProperties have no index signature
+  schema:
+    type: object
+    required: [id]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+  expect: "{ id: number; name?: string }"
+  accept: [{ id: 1 }, { id: 1, name: x }]
+  reject: [{ name: x }, { id: "1" }]
+  semantic: "{ id: integer, name?: string }"
+
+- name: properties with additionalProperties false have no index signature
+  schema:
+    type: object
+    additionalProperties: false
+    properties:
+      id: { type: integer }
+  expect: "{ id?: number }"
+  accept: [{}, { id: 1 }]
+  reject: [{ id: x }, { other: 1 }]
+  semantic: "{ id?: integer }"
+
+- name: additionalProperties schema is joined with the property types
+  schema:
+    type: object
+    required: [a]
+    properties:
+      a: { type: string }
+    additionalProperties: { type: number }
+  expect: "{ a: string; [key: string]: number | string }"
+  accept: [{ a: x }, { a: x, n: 1 }]
+  reject: [{ n: 1 }]
+  approx: [{ a: x, b: s }]
+  semantic: "{ a: string, [string]: number }"
+
+- name: optional properties add undefined to the index signature
+  schema:
+    type: object
+    properties:
+      a: { type: string }
+    additionalProperties: { type: number }
+  expect: "{ a?: string; [key: string]: number | string | undefined }"
+  accept: [{}, { n: 1 }]
+  approx: [{ b: s }]
+  semantic: "{ a?: string, [string]: number }"
+
+- name: additionalProperties true
+  schema:
+    type: object
+    additionalProperties: true
+  expect: "{ [key: string]: unknown }"
+  accept: [{}, { a: 1 }]
+  semantic: "{ [string]: any }"
+
+- name: additionalProperties schema without properties
+  schema:
+    type: object
+    additionalProperties: { type: string }
+  expect: "{ [key: string]: string }"
+  accept: [{}, { a: x }]
+  reject: [{ a: 1 }]
+  semantic: "{ [string]: string }"
+
+- name: patternProperties become an index signature
+  schema:
+    type: object
+    patternProperties:
+      "^x-": { type: string }
+      "^n-": { type: number }
+  expect: "{ [key: string]: string | number }"
+  accept: [{ x-a: s, n-b: 1 }]
+  reject: [{ a: true }]
+  approx: [{ x-a: 1 }]
+  semantic: "{ [string]: union(string, number) }"
+
+- name: enum is a union of literals
+  schema: { type: string, enum: [available, pending, "it's"] }
+  expect: "'available' | 'pending' | 'it\\'s'"
+  accept: [available, "it's"]
+  reject: [other]
+  semantic: 'enum("available", "pending", "it''s")'
+
+- name: numeric and mixed enums
+  schema: { enum: [1, 2.5, true, null, x] }
+  expect: "1 | 2.5 | true | 'x' | null"
+  accept: [1, 2.5, true, null, x]
+  reject: [3, false, y]
+  semantic: 'enum(1, 2.5, true, "x", null)'
+
+- name: const is a literal
+  schema: { const: cat }
+  expect: "'cat'"
+  accept: [cat]
+  reject: [dog]
+  semantic: '"cat"'
+
+- name: prefixItems without items allow more elements
+  schema:
+    type: array
+    prefixItems: [{ type: string }, { type: number }]
+  expect: "[string?, number?, ...unknown[]]"
+  accept: [[], [a], [a, 1, true]]
+  reject: [[1]]
+  semantic: "tuple(string?, number?, ...any)"
+
+- name: prefixItems with items
+  schema:
+    type: array
+    prefixItems: [{ type: string }]
+    items: { type: boolean }
+  expect: "[string?, ...boolean[]]"
+  accept: [[], [a, true]]
+  reject: [[a, 1]]
+  semantic: "tuple(string?, ...boolean)"
+
+- name: prefixItems with items false have optional elements
+  schema:
+    type: array
+    prefixItems: [{ type: string }, { type: number }]
+    items: false
+  expect: "[string?, number?]"
+  accept: [[], [a], [a, 1]]
+  reject: [[a, 1, true]]
+  semantic: "tuple(string?, number?)"
+
+- name: prefixItems elements up to minItems are required
+  schema:
+    type: array
+    prefixItems: [{ type: string }, { type: number }]
+    items: false
+    minItems: 2
+  expect: "[string, number]"
+  accept: [[a, 1]]
+  reject: [[a], []]
+  semantic: "tuple(string, number)"
+
+- name: prefixItems with minItems below the prefix length
+  schema:
+    type: array
+    prefixItems: [{ type: string }, { type: number }]
+    minItems: 1
+  expect: "[string, number?, ...unknown[]]"
+  accept: [[a], [a, 1, x]]
+  reject: [[]]
+  semantic: "tuple(string, number?, ...any)"
+
+- name: prefixItems are truncated by maxItems
+  schema:
+    type: array
+    prefixItems: [{ type: string }, { type: number }]
+    maxItems: 1
+  expect: "[string?]"
+  accept: [[], [a]]
+  reject: [[a, 1]]
+  semantic: "tuple(string?)"
+
+- name: maxItems equal to the prefix length allows no rest elements
+  schema:
+    type: array
+    prefixItems: [{ type: string }, { type: number }]
+    items: { type: boolean }
+    maxItems: 2
+  expect: "[string?, number?]"
+  accept: [[a, 1]]
+  reject: [[a, 1, true]]
+  semantic: "tuple(string?, number?)"
+
+- name: optional union elements are parenthesized
+  schema:
+    type: array
+    prefixItems: [{ type: [string, "null"] }]
+    items: false
+  expect: "[(string | null)?]"
+
+  # Approximations (design.md 6.4): the rest element type stands in for the exact tuple.
+  accept: [[], [null], [a]]
+  reject: [[1]]
+  semantic: "tuple(union(string, null)?)"
+
+- name: minItems beyond the prefix length is approximated with the rest type
+  schema:
+    type: array
+    prefixItems: [{ type: string }, { type: number }]
+    items: { type: boolean }
+    minItems: 3
+  expect: "[string, number, ...boolean[]]"
+  accept: [[a, 1, true]]
+  reject: [[a]]
+  approx: [[a, 1]]
+  semantic: "tuple(string, number, ...boolean)"
+
+- name: items with maxItems beyond the prefix length is approximated with the rest type
+  schema:
+    type: array
+    prefixItems: [{ type: string }]
+    items: { type: boolean }
+    maxItems: 3
+  expect: "[string?, ...boolean[]]"
+
+  # Combinations no value can satisfy.
+  accept: [[a, true]]
+  reject: [[1]]
+  approx: [[a, true, true, true]]
+  semantic: "tuple(string?, ...boolean)"
+
+- name: minItems greater than maxItems is never
+  schema: { type: array, items: { type: string }, minItems: 3, maxItems: 2 }
+  expect: never
+  reject: [[a, b, c], []]
+  semantic: "never"
+
+- name: minItems greater than maxItems is never for tuples
+  schema:
+    type: array
+    prefixItems: [{ type: string }]
+    minItems: 3
+    maxItems: 2
+  expect: never
+  reject: [[a, b, c], []]
+  semantic: "never"
+
+- name: items false with minItems beyond the prefix length is never
+  schema:
+    type: array
+    prefixItems: [{ type: string }]
+    items: false
+    minItems: 2
+  expect: never
+  reject: [[a, b], [a]]
+  semantic: "never"
+
+- name: draft 4 array-form items follow the same rules
+  openapi: 3.0.3
+  schema:
+    type: array
+    items: [{ type: string }, { type: number }]
+    additionalItems: false
+    minItems: 1
+  expect: "[string, number?]"
+  accept: [[a], [a, 1]]
+  reject: [[a, 1, 2], []]
+  semantic: "tuple(string, number?)"
+
+- name: draft 4 additionalItems is the rest type
+  openapi: 3.0.3
+  schema:
+    type: array
+    items: [{ type: string }]
+    additionalItems: { type: boolean }
+  expect: "[string?, ...boolean[]]"
+  accept: [[a, true]]
+  reject: [[a, 1]]
+  semantic: "tuple(string?, ...boolean)"
+
+- name: arrays
+  schema: { type: array, items: { type: string } }
+  expect: "string[]"
+  accept: [[], [a, b]]
+  reject: [[1]]
+  semantic: "array(string)"
+
+- name: array without items
+  schema: { type: array }
+  expect: "unknown[]"
+
+  # 029: whether a value is binary depends on where it appears. Inside JSON it is always a JSON string.
+  # The HTTP body itself and multipart part values are covered by tests/binary.rs.
+  accept: [[], [1, a]]
+  reject: [{}]
+  semantic: "array(any)"
+
+- name: format binary at the root of a declaration is a JSON string
+  schema: { type: string, format: binary }
+  expect: string
+  warnings: []
+  accept: [AAEC]
+  reject: [1]
+  semantic: "string(binary)"
+
+- name: format binary inside a JSON value is a string and warns
+  schema: { type: object, properties: { file: { type: string, format: binary } } }
+  expect: |-
+    {
+      /** @format binary */
+      file?: string;
+    }
+  warnings: ["unsupported #/components/schemas/T/properties/file/format"]
+  accept: [{ file: AAEC }]
+  reject: [{ file: 1 }]
+  semantic: "{ file?: string(binary) }"
+
+- name: contentMediaType without base64 inside JSON is a string
+  schema: { type: object, properties: { html: { type: string, contentMediaType: text/html } } }
+  expect: |-
+    {
+      /** @contentMediaType text/html */
+      html?: string;
+    }
+  warnings: []
+  accept: [{ html: "<p>hi</p>" }]
+  semantic: "{ html?: string }"
+
+- name: contentMediaType with base64 stays a string
+  schema: { type: string, contentMediaType: image/png, contentEncoding: base64 }
+  expect: string
+  accept: [aGk=]
+  reject: [1]
+  semantic: "string"
+
+- name: circular references go through named types
+  schemas:
+    Node:
+      type: object
+      required: [children]
+      properties:
+        children: { type: array, items: { $ref: "#/components/schemas/Node" } }
+  expect:
+    Node: "{ children: Node[] }"
+  accept: { Node: [{ children: [] }, { children: [{ children: [] }] }] }
+  reject: { Node: [{}, { children: [{}] }] }
+  semantic:
+    Node: "{ children: array(Node) }"
+
+- name: inline self references are hoisted to a named type
+  schemas:
+    Tree:
+      type: object
+      properties:
+        root:
+          type: object
+          properties:
+            next: { $ref: "#/components/schemas/Tree/properties/root" }
+  expect:
+    Tree: "{ root?: Root }"
+    Root: "{ next?: Root }"
+  accept: { Tree: [{}, { root: { next: { next: {} } } }] }
+  reject: { Tree: [{ root: { next: 1 } }] }
+  semantic:
+    Tree: "{ root?: root }"
+    root: "{ next?: root }"
+
+- name: not is unknown with a warning
+  schema: { not: { type: string } }
+  expect: unknown
+  warnings: ["unsupported #/components/schemas/T/not"]
+  accept: [1]
+  approx: [a]
+
+  # Constraints TypeScript cannot check (design.md 6.4.1): the type is wider than the schema.
+  semantic: "any"
+
+- name: string and number constraints are approximated
+  schemas:
+    Code: { type: string, minLength: 3, pattern: "^[A-Z]+$" }
+    Count: { type: integer, minimum: 1 }
+  expect:
+    Code: string
+    Count: number
+  accept: { Code: [ABC], Count: [1] }
+  reject: { Code: [1], Count: [a] }
+  approx: { Code: [a], Count: [0, 1.5] }
+  semantic:
+    Code: "string"
+    Count: "integer"
+
+- name: exclusivity of oneOf is approximated
+  schema: { oneOf: [{ type: string }, { type: number }, { type: string, maxLength: 1 }] }
+  expect: string | number
+  accept: [abc, 1]
+  reject: [true]
+  approx: [a]
+
+  # 038: the model keeps integer and number apart; TypeScript prints both as `number`.
+  semantic: "oneOf(string, number, string)"
+
+- name: integer and number together are one number
+  schema: { type: [integer, number] }
+  expect: number
+  accept: [1, 2.5]
+  reject: [a]
+  semantic: "union(integer, number)"
+
+- name: format is kept in the model and printed as the base type
+  schema:
+    {
+      type: object,
+      properties: { at: { type: string, format: date-time }, n: { type: integer, format: int64 } },
+    }
+  expect: |-
+    {
+      /** @format date-time */
+      at?: string;
+      /** @format int64 */
+      n?: number;
+    }
+  accept: [{ at: "2026-11-10T00:00:00Z", n: 1 }]
+  semantic: "{ at?: string(date-time), n?: integer(int64) }"

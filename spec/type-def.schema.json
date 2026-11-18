@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/tsurara-openapi/tsurara/main/spec/type-def.schema.json",
+  "title": "TypeDefs",
+  "description": "Type metadata, version 1, for runtimes that convert between JSON and typed values generically (design.md 18.7). One document holds the declarations of a generated module by their names in the target language.",
+  "type": "object",
+  "required": ["v", "types"],
+  "additionalProperties": false,
+  "properties": {
+    "v": { "const": 1 },
+    "types": { "type": "object", "additionalProperties": { "$ref": "#/$defs/decl" } }
+  },
+  "$defs": {
+    "decl": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "fields"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "record" },
+            "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } },
+            "base": { "type": "string", "description": "Name of the base declaration." },
+            "additional": {
+              "$ref": "#/$defs/type",
+              "description": "Values of properties the record does not list, kept in an extra map."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "values", "open"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "enum" },
+            "values": { "type": "array", "items": { "type": ["string", "number", "boolean"] } },
+            "open": {
+              "type": "boolean",
+              "description": "Decoding keeps an unlisted value instead of failing."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "property", "variants", "open"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "taggedUnion" },
+            "property": { "type": "string" },
+            "variants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["values", "type"],
+                "additionalProperties": false,
+                "properties": {
+                  "values": { "type": "array", "items": { "type": "string" } },
+                  "type": { "$ref": "#/$defs/type" }
+                }
+              }
+            },
+            "default": { "$ref": "#/$defs/type" },
+            "open": { "type": "boolean" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "members"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "untaggedUnion" },
+            "members": { "type": "array", "items": { "$ref": "#/$defs/type" } },
+            "discriminator": { "type": "string" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "type"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "alias" },
+            "type": { "$ref": "#/$defs/type" }
+          }
+        }
+      ]
+    },
+    "field": {
+      "type": "object",
+      "required": ["wire", "member", "type", "presence"],
+      "additionalProperties": false,
+      "properties": {
+        "wire": { "type": "string", "description": "The JSON key." },
+        "member": { "type": "string", "description": "The member name in the target language." },
+        "type": { "$ref": "#/$defs/type" },
+        "presence": { "enum": ["required", "optional", "nullable", "optionalNullable"] }
+      }
+    },
+    "type": {
+      "oneOf": [
+        { "enum": ["any", "never", "null", "bool", "bytes"] },
+        {
+          "type": "object",
+          "required": ["scalar"],
+          "additionalProperties": false,
+          "properties": {
+            "scalar": { "enum": ["integer", "number", "string"] },
+            "format": { "type": "string" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["list"],
+          "additionalProperties": false,
+          "properties": { "list": { "$ref": "#/$defs/type" } }
+        },
+        {
+          "type": "object",
+          "required": ["map"],
+          "additionalProperties": false,
+          "properties": { "map": { "$ref": "#/$defs/type" } }
+        },
+        {
+          "type": "object",
+          "required": ["tuple", "required"],
+          "additionalProperties": false,
+          "properties": {
+            "tuple": { "type": "array", "items": { "$ref": "#/$defs/type" } },
+            "required": { "type": "integer", "minimum": 0 },
+            "rest": { "$ref": "#/$defs/type" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["ref"],
+          "additionalProperties": false,
+          "properties": { "ref": { "type": "string" } }
+        },
+        {
+          "type": "object",
+          "required": ["nullable"],
+          "additionalProperties": false,
+          "properties": { "nullable": { "$ref": "#/$defs/type" } }
+        },
+        {
+          "type": "object",
+          "required": ["external", "schema"],
+          "additionalProperties": false,
+          "properties": {
+            "external": {
+              "type": "string",
+              "description": "Name of a converter the user registers with the runtime."
+            },
+            "schema": { "$ref": "#/$defs/type" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["literal"],
+          "additionalProperties": false,
+          "properties": { "literal": {} }
+        },
+        {
+          "type": "object",
+          "required": ["union"],
+          "additionalProperties": false,
+          "properties": { "union": { "type": "array", "items": { "$ref": "#/$defs/type" } } }
+        }
+      ]
+    }
+  }
+}

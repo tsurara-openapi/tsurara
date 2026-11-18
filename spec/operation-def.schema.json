@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/tsurara-openapi/tsurara/main/spec/operation-def.schema.json",
+  "title": "OperationDef",
+  "description": "Runtime metadata of one operation, version 1. Generated code passes it to the runtime library, which builds the request and parses the response from it (design.md 8.5, 18.9). A backend may emit it as a literal of its language; converted to JSON, it validates against this schema.",
+  "type": "object",
+  "required": ["v", "id", "method", "path", "responses"],
+  "additionalProperties": false,
+  "properties": {
+    "v": {
+      "const": 1,
+      "description": "Version of the format."
+    },
+    "id": {
+      "type": "string",
+      "description": "The operationId, or a name built from the method and path."
+    },
+    "method": {
+      "type": "string",
+      "description": "Upper-case HTTP method."
+    },
+    "path": {
+      "type": "string",
+      "description": "Path template, such as /pet/{petId}."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "params": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/paramGroup"
+        },
+        "query": {
+          "$ref": "#/$defs/paramGroup"
+        },
+        "headers": {
+          "$ref": "#/$defs/paramGroup"
+        },
+        "cookies": {
+          "$ref": "#/$defs/paramGroup"
+        },
+        "querystring": {
+          "type": "object",
+          "required": ["contentType"],
+          "additionalProperties": false,
+          "properties": {
+            "contentType": {
+              "type": "string"
+            }
+          },
+          "description": "`in: querystring` (3.2): the whole query string as one value."
+        }
+      }
+    },
+    "body": {
+      "type": "object",
+      "required": ["contents"],
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "contents": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Definition per media type. The first key is the default media type.",
+          "additionalProperties": {
+            "$ref": "#/$defs/media"
+          }
+        }
+      }
+    },
+    "responses": {
+      "type": "object",
+      "description": "Definition per status: a code such as 200, a range such as 2XX, or default.",
+      "propertyNames": {
+        "pattern": "^([1-5][0-9][0-9]|[1-5]XX|default)$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/response"
+      }
+    },
+    "security": {
+      "type": "array",
+      "description": "Authentication alternatives, in order (OpenAPI `security`, resolved per operation). Each alternative lists the schemes it needs together; an empty alternative means no authentication. Without the field, the runtime sends no credentials.",
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/securityUse"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "style": {
+      "enum": ["simple", "label", "matrix", "form", "spaceDelimited", "pipeDelimited", "deepObject"]
+    },
+    "parseAs": {
+      "enum": ["json", "text", "blob", "stream", "events", "jsonLines", "jsonSeq", "none", "auto"],
+      "description": "How to read a response body. auto decides from the actual Content-Type. events reads Server-Sent Events one by one, jsonLines and jsonSeq read JSON Lines and JSON text sequences item by item; a generator emits them only for a runtime that declares them, and stream otherwise."
+    },
+    "param": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "$ref": "#/$defs/style"
+        },
+        "explode": {
+          "type": "boolean"
+        },
+        "allowReserved": {
+          "type": "boolean"
+        },
+        "contentType": {
+          "type": "string",
+          "description": "A parameter given with content, serialized with this media type."
+        },
+        "type": {
+          "$ref": "type-def.schema.json#/$defs/type",
+          "description": "TypeDef of the value, for runtimes that convert with TypeDefs (design.md 18.7). Other runtimes ignore it."
+        }
+      }
+    },
+    "paramGroup": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/param"
+      }
+    },
+    "media": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "encoding": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "contentType": {
+                "type": "string"
+              },
+              "style": {
+                "$ref": "#/$defs/style"
+              },
+              "explode": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "type": {
+          "$ref": "type-def.schema.json#/$defs/type",
+          "description": "TypeDef of the value, for runtimes that convert with TypeDefs (design.md 18.7). Other runtimes ignore it."
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "required": ["parseAs"],
+      "additionalProperties": false,
+      "properties": {
+        "parseAs": {
+          "$ref": "#/$defs/parseAs"
+        },
+        "contentTypes": {
+          "type": "object",
+          "description": "parseAs per media type, when the media types of a status are read differently.",
+          "additionalProperties": {
+            "$ref": "#/$defs/parseAs"
+          }
+        },
+        "jsonEvents": {
+          "description": "With events: the names of the events whose data is parsed as JSON, or true for every event. The data of other events stays a string.",
+          "oneOf": [{ "const": true }, { "type": "array", "items": { "type": "string" } }]
+        },
+        "types": {
+          "type": "object",
+          "description": "TypeDef of the body per media type, for runtimes that convert with TypeDefs.",
+          "additionalProperties": {
+            "$ref": "type-def.schema.json#/$defs/type"
+          }
+        }
+      }
+    },
+    "securityUse": {
+      "type": "object",
+      "required": ["scheme", "type"],
+      "additionalProperties": false,
+      "description": "A security scheme an alternative uses, with what the runtime needs to place the credential.",
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "description": "The name in components.securitySchemes; passed to the runtime's auth hook."
+        },
+        "type": {
+          "enum": ["apiKey", "http", "oauth2", "openIdConnect", "mutualTLS"]
+        },
+        "in": {
+          "enum": ["header", "query", "cookie"],
+          "description": "apiKey: where the key goes."
+        },
+        "name": {
+          "type": "string",
+          "description": "apiKey: the header, query or cookie name."
+        },
+        "httpScheme": {
+          "type": "string",
+          "description": "http: the Authorization scheme, such as bearer or basic."
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+# A union of arrays whose items are unions (found by the property tests, 2026-11-17): Python merged
+# the members by splitting at every ` | `, inside brackets too, and printed `list[str | S0] | None]`.
+openapi: 3.1.0
+info: { title: unions of arrays, version: "1" }
+paths: {}
+components:
+  schemas:
+    Name: { type: string }
+    Names:
+      anyOf:
+        - {
+            type: array,
+            items: { oneOf: [{ type: string }, { $ref: "#/components/schemas/Name" }] },
+          }
+        - { type: array, items: { type: [string, "null"] } }

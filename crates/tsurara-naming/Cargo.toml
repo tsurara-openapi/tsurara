@@ -1,0 +1,19 @@
+[package]
+name = "tsurara-naming"
+description = "Name allocation shared by tsurara backends"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+schemars = { workspace = true, optional = true }
+serde.workspace = true
+
+[features]
+# The JSON Schema of the data policy.
+schema = ["dep:schemars"]
+
+[lints]
+workspace = true

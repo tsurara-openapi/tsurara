@@ -1,0 +1,54 @@
+name: Bug report
+description: The generator, the CLI or a runtime does something wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the report. Security problems go to private vulnerability reporting instead (see SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "`tsurara --version`, and the runtime package versions if the problem is in a runtime."
+    validations:
+      required: true
+  - type: dropdown
+    id: language
+    attributes:
+      label: Target language
+      options: [TypeScript, Python, Rust, Go, Not language specific]
+    validations:
+      required: true
+  - type: textarea
+    id: definition
+    attributes:
+      label: Minimal definition
+      description: As few paths and schemas as show the problem. Rename anything private.
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: "`tsurara.config.yaml`, without secrets."
+      render: yaml
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: The command, the warnings or errors it printed, and the wrong part of the generated code or the checker output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, and the Node, Python, Rust or Go version when relevant.

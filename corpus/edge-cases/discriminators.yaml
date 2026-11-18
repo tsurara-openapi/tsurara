@@ -1,0 +1,97 @@
+# Discriminator patterns: oneOf with and without mapping, mapping by name and by reference,
+# allOf inheritance from the base, a discriminated union nested in another one, and inline members
+# (selected by their own `const` or `enum`, or by none, as in the OpenAI and GitHub definitions).
+openapi: 3.1.0
+info: { title: discriminators, version: "1" }
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Pet" } }
+  /shapes:
+    post:
+      operationId: createShape
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Shape" }
+      responses: { "204": { description: ok } }
+components:
+  schemas:
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: petType
+        mapping:
+          cat: Cat
+          dog: "#/components/schemas/Dog"
+    PetBase:
+      type: object
+      required: [petType]
+      properties:
+        petType: { type: string }
+        name: { type: string }
+      discriminator: { propertyName: petType }
+    Cat:
+      allOf:
+        - $ref: "#/components/schemas/PetBase"
+        - type: object
+          properties:
+            indoor: { type: boolean }
+    Dog:
+      allOf:
+        - $ref: "#/components/schemas/PetBase"
+        - type: object
+          properties:
+            breed: { type: string }
+    Shape:
+      oneOf:
+        - $ref: "#/components/schemas/Circle"
+        - $ref: "#/components/schemas/Polygon"
+      discriminator: { propertyName: kind }
+    Circle:
+      type: object
+      required: [kind, radius]
+      properties:
+        kind: { type: string, const: Circle }
+        radius: { type: number }
+    Polygon:
+      oneOf:
+        - $ref: "#/components/schemas/Square"
+        - $ref: "#/components/schemas/Triangle"
+      discriminator: { propertyName: sides }
+    Square:
+      type: object
+      required: [kind, sides]
+      properties:
+        kind: { type: string }
+        sides: { type: string, enum: ["4"] }
+    Triangle:
+      type: object
+      required: [kind, sides]
+      properties:
+        kind: { type: string }
+        sides: { type: string, enum: ["3"] }
+    Event:
+      oneOf:
+        - type: object
+          required: [type]
+          properties: { type: { const: created }, id: { type: string } }
+        - type: object
+          required: [type]
+          properties: { type: { type: string, enum: [deleted, removed] } }
+      discriminator: { propertyName: type }
+    Loose:
+      oneOf:
+        - type: object
+          properties: { type: { const: a } }
+        - type: object
+          properties: { type: { type: string }, b: { type: integer } }
+      discriminator: { propertyName: type }

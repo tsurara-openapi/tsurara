@@ -1,0 +1,92 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ *  strict
+ * @format
+ */
+
+'use strict';
+
+
+
+/**
+ * Encode a FormData filename compliant with RFC 2183
+ *
+ * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition#directives
+ */
+function encodeFilename(filename) {
+  return encodeURIComponent(filename.replace(/\//g, '_'));
+}
+
+/**
+ * Polyfill for XMLHttpRequest2 FormData API, allowing multipart POST requests
+ * with mixed data (string, native files) to be submitted via XMLHttpRequest.
+ *
+ * Example:
+ *
+ *   var photo = {
+ *     uri: uriFromCameraRoll,
+ *     type: 'image/jpeg',
+ *     name: 'photo.jpg',
+ *   };
+ *
+ *   var body = new FormData();
+ *   body.append('authToken', 'secret');
+ *   body.append('photo', photo);
+ *   body.append('title', 'A beautiful photo!');
+ *
+ *   xhr.open('POST', serverURL);
+ *   xhr.send(body);
+ */
+class FormData {
+  _parts;
+
+  constructor() {
+    this._parts = [];
+  }
+
+  append(key, value) {
+    // The XMLHttpRequest spec doesn't specify if duplicate keys are allowed.
+    // MDN says that any new values should be appended to existing values.
+    // In any case, major browsers allow duplicate keys, so that's what we'll do
+    // too. They'll simply get appended as additional form data parts in the
+    // request body, leaving the server to deal with them.
+    this._parts.push([key, value]);
+  }
+
+  getAll(key) {
+    return this._parts
+      .filter(([name]) => name === key)
+      .map(([, value]) => value);
+  }
+
+  getParts() {
+    return this._parts.map(([name, value]) => {
+      const contentDisposition = 'form-data; name="' + name + '"';
+
+      const headers = {'content-disposition': contentDisposition};
+
+      // The body part is a "blob", which in React Native just means
+      // an object with a `uri` attribute. Optionally, it can also
+      // have a `name` and `type` attribute to specify filename and
+      // content type (cf. web Blob interface.)
+      if (typeof value === 'object' && !Array.isArray(value) && value) {
+        if (typeof value.name === 'string') {
+          headers['content-disposition'] +=
+            `; filename="${encodeFilename(value.name)}"`;
+        }
+        if (typeof value.type === 'string') {
+          headers['content-type'] = value.type;
+        }
+        return {...value, headers, fieldName: name};
+      }
+      // Convert non-object values to strings as per FormData.append() spec
+      return {string: String(value), headers, fieldName: name};
+    });
+  }
+}
+
+export default FormData;

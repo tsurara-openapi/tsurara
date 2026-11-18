@@ -1,0 +1,736 @@
+{
+  "typeDefs": {
+    "v": 1,
+    "types": {
+      "Pet": {
+        "kind": "record",
+        "fields": [
+          {
+            "wire": "id",
+            "member": "id",
+            "type": {
+              "scalar": "integer",
+              "format": "int64"
+            },
+            "presence": "required"
+          },
+          {
+            "wire": "createdAt",
+            "member": "created_at",
+            "type": {
+              "scalar": "string",
+              "format": "date-time"
+            },
+            "presence": "optional"
+          },
+          {
+            "wire": "nickname",
+            "member": "nickname",
+            "type": {
+              "scalar": "string"
+            },
+            "presence": "optionalNullable"
+          },
+          {
+            "wire": "status",
+            "member": "status",
+            "type": {
+              "ref": "Status"
+            },
+            "presence": "optional"
+          },
+          {
+            "wire": "tags",
+            "member": "tags",
+            "type": {
+              "list": {
+                "scalar": "string"
+              }
+            },
+            "presence": "optional"
+          },
+          {
+            "wire": "scores",
+            "member": "scores",
+            "type": {
+              "map": {
+                "scalar": "number"
+              }
+            },
+            "presence": "optional"
+          },
+          {
+            "wire": "owner",
+            "member": "owner",
+            "type": {
+              "nullable": {
+                "ref": "Owner"
+              }
+            },
+            "presence": "nullable"
+          }
+        ],
+        "additional": {
+          "scalar": "string"
+        }
+      },
+      "Owner": {
+        "kind": "record",
+        "fields": [
+          {
+            "wire": "name",
+            "member": "name",
+            "type": {
+              "scalar": "string"
+            },
+            "presence": "required"
+          }
+        ]
+      },
+      "Cat": {
+        "kind": "record",
+        "base": "Owner",
+        "fields": [
+          {
+            "wire": "meow",
+            "member": "meow",
+            "type": "bool",
+            "presence": "required"
+          }
+        ]
+      },
+      "Status": {
+        "kind": "enum",
+        "values": ["available", "sold"],
+        "open": true
+      },
+      "Level": {
+        "kind": "enum",
+        "values": [1, 2],
+        "open": false
+      },
+      "Shape": {
+        "kind": "taggedUnion",
+        "property": "kind",
+        "variants": [
+          {
+            "values": ["circle"],
+            "type": {
+              "ref": "Circle"
+            }
+          },
+          {
+            "values": ["square", "box"],
+            "type": {
+              "ref": "Square"
+            }
+          }
+        ],
+        "default": {
+          "ref": "Circle"
+        },
+        "open": false
+      },
+      "Animal": {
+        "kind": "taggedUnion",
+        "property": "type",
+        "variants": [
+          {
+            "values": ["cat"],
+            "type": {
+              "ref": "Cat"
+            }
+          }
+        ],
+        "open": true
+      },
+      "Circle": {
+        "kind": "record",
+        "fields": [
+          {
+            "wire": "kind",
+            "member": "kind",
+            "type": {
+              "scalar": "string"
+            },
+            "presence": "required"
+          },
+          {
+            "wire": "r",
+            "member": "r",
+            "type": {
+              "scalar": "number"
+            },
+            "presence": "required"
+          }
+        ]
+      },
+      "Square": {
+        "kind": "record",
+        "fields": [
+          {
+            "wire": "kind",
+            "member": "kind",
+            "type": {
+              "scalar": "string"
+            },
+            "presence": "required"
+          },
+          {
+            "wire": "side",
+            "member": "side",
+            "type": {
+              "scalar": "number"
+            },
+            "presence": "required"
+          }
+        ]
+      },
+      "Id": {
+        "kind": "untaggedUnion",
+        "members": [
+          {
+            "scalar": "integer"
+          },
+          {
+            "scalar": "string"
+          }
+        ]
+      },
+      "Name": {
+        "kind": "alias",
+        "type": {
+          "scalar": "string"
+        }
+      },
+      "Point": {
+        "kind": "alias",
+        "type": {
+          "tuple": [
+            {
+              "scalar": "number"
+            },
+            {
+              "scalar": "number"
+            }
+          ],
+          "required": 1,
+          "rest": {
+            "scalar": "string"
+          }
+        }
+      },
+      "Uuid": {
+        "kind": "alias",
+        "type": {
+          "external": "Uuid",
+          "schema": {
+            "scalar": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "Version": {
+        "kind": "alias",
+        "type": {
+          "literal": "v1"
+        }
+      },
+      "Loose": {
+        "kind": "alias",
+        "type": {
+          "union": [
+            {
+              "scalar": "integer"
+            },
+            "bool",
+            "null"
+          ]
+        }
+      },
+      "Free": {
+        "kind": "alias",
+        "type": "any"
+      },
+      "Nothing": {
+        "kind": "alias",
+        "type": "never"
+      }
+    }
+  },
+  "vectors": [
+    {
+      "name": "records rename fields, omit missing ones and keep explicit null",
+      "type": {
+        "ref": "Pet"
+      },
+      "decode": [
+        {
+          "json": {
+            "id": 1,
+            "createdAt": "2026-11-10T00:00:00Z",
+            "nickname": null,
+            "status": "sold",
+            "tags": ["a"],
+            "scores": {
+              "x": 1.5
+            },
+            "owner": {
+              "name": "o"
+            },
+            "extra": "e"
+          },
+          "value": {
+            "$type": "Pet",
+            "id": 1,
+            "created_at": "2026-11-10T00:00:00Z",
+            "nickname": null,
+            "status": "sold",
+            "tags": ["a"],
+            "scores": {
+              "x": 1.5
+            },
+            "owner": {
+              "$type": "Owner",
+              "name": "o"
+            },
+            "$additional": {
+              "extra": "e"
+            }
+          }
+        },
+        {
+          "json": {
+            "id": 2,
+            "owner": null
+          },
+          "value": {
+            "$type": "Pet",
+            "id": 2,
+            "owner": null
+          }
+        },
+        {
+          "json": {
+            "id": 1.0,
+            "owner": null
+          },
+          "value": {
+            "$type": "Pet",
+            "id": 1,
+            "owner": null
+          },
+          "note": "an integer that arrives as a float (GDScript parses every JSON number as a float) is coerced"
+        },
+        {
+          "json": {
+            "owner": null
+          },
+          "error": true,
+          "note": "a required field is missing"
+        },
+        {
+          "json": {
+            "id": 1.5,
+            "owner": null
+          },
+          "error": true
+        }
+      ],
+      "encode": [
+        {
+          "value": {
+            "$type": "Pet",
+            "id": 2,
+            "nickname": null,
+            "owner": null,
+            "$additional": {
+              "extra": "e"
+            }
+          },
+          "json": {
+            "id": 2,
+            "nickname": null,
+            "owner": null,
+            "extra": "e"
+          }
+        },
+        {
+          "value": {
+            "$type": "Pet",
+            "id": 3,
+            "owner": {
+              "$type": "Owner",
+              "name": "o"
+            }
+          },
+          "json": {
+            "id": 3,
+            "owner": {
+              "name": "o"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a base record contributes its fields",
+      "type": {
+        "ref": "Cat"
+      },
+      "decode": [
+        {
+          "json": {
+            "name": "Tom",
+            "meow": true
+          },
+          "value": {
+            "$type": "Cat",
+            "name": "Tom",
+            "meow": true
+          }
+        }
+      ],
+      "encode": [
+        {
+          "value": {
+            "$type": "Cat",
+            "name": "Tom",
+            "meow": false
+          },
+          "json": {
+            "name": "Tom",
+            "meow": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "open enums keep unlisted values and write them back",
+      "type": {
+        "ref": "Status"
+      },
+      "decode": [
+        {
+          "json": "sold",
+          "value": "sold"
+        },
+        {
+          "json": "lost",
+          "value": {
+            "$unknown": "lost"
+          }
+        }
+      ],
+      "encode": [
+        {
+          "value": "available",
+          "json": "available"
+        },
+        {
+          "value": {
+            "$unknown": "lost"
+          },
+          "json": "lost"
+        }
+      ]
+    },
+    {
+      "name": "closed enums reject unlisted values",
+      "type": {
+        "ref": "Level"
+      },
+      "decode": [
+        {
+          "json": 2,
+          "value": 2
+        },
+        {
+          "json": 3,
+          "error": true
+        }
+      ],
+      "encode": [
+        {
+          "value": 1,
+          "json": 1
+        }
+      ]
+    },
+    {
+      "name": "tagged unions select by the discriminator, with a default",
+      "type": {
+        "ref": "Shape"
+      },
+      "decode": [
+        {
+          "json": {
+            "kind": "box",
+            "side": 2
+          },
+          "value": {
+            "$type": "Square",
+            "kind": "box",
+            "side": 2
+          }
+        },
+        {
+          "json": {
+            "kind": "circle",
+            "r": 1
+          },
+          "value": {
+            "$type": "Circle",
+            "kind": "circle",
+            "r": 1
+          }
+        },
+        {
+          "json": {
+            "kind": "oval",
+            "r": 1
+          },
+          "value": {
+            "$type": "Circle",
+            "kind": "oval",
+            "r": 1
+          }
+        }
+      ],
+      "encode": [
+        {
+          "value": {
+            "$type": "Square",
+            "kind": "square",
+            "side": 3
+          },
+          "json": {
+            "kind": "square",
+            "side": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "open tagged unions keep unlisted variants",
+      "type": {
+        "ref": "Animal"
+      },
+      "decode": [
+        {
+          "json": {
+            "type": "cat",
+            "name": "Tom",
+            "meow": true
+          },
+          "value": {
+            "$type": "Cat",
+            "name": "Tom",
+            "meow": true
+          }
+        },
+        {
+          "json": {
+            "type": "dog",
+            "bark": true
+          },
+          "value": {
+            "$unknown": {
+              "type": "dog",
+              "bark": true
+            }
+          }
+        }
+      ],
+      "encode": [
+        {
+          "value": {
+            "$unknown": {
+              "type": "dog"
+            }
+          },
+          "json": {
+            "type": "dog"
+          }
+        }
+      ]
+    },
+    {
+      "name": "untagged unions try members in order",
+      "type": {
+        "ref": "Id"
+      },
+      "decode": [
+        {
+          "json": 5,
+          "value": 5
+        },
+        {
+          "json": "x",
+          "value": "x"
+        },
+        {
+          "json": true,
+          "error": true
+        }
+      ],
+      "encode": [
+        {
+          "value": "x",
+          "json": "x"
+        }
+      ]
+    },
+    {
+      "name": "aliases, tuples, external types, literals, unions, any and never (Name)",
+      "type": {
+        "ref": "Name"
+      },
+      "decode": [
+        {
+          "json": "n",
+          "value": "n"
+        }
+      ],
+      "encode": [
+        {
+          "value": "n",
+          "json": "n"
+        }
+      ]
+    },
+    {
+      "name": "aliases, tuples, external types, literals, unions, any and never (Point)",
+      "type": {
+        "ref": "Point"
+      },
+      "decode": [
+        {
+          "json": [1],
+          "value": [1]
+        },
+        {
+          "json": [1, 2, "a"],
+          "value": [1, 2, "a"]
+        },
+        {
+          "json": [],
+          "error": true
+        }
+      ],
+      "encode": [
+        {
+          "value": [1, 2],
+          "json": [1, 2]
+        }
+      ]
+    },
+    {
+      "name": "aliases, tuples, external types, literals, unions, any and never (Uuid)",
+      "type": {
+        "ref": "Uuid"
+      },
+      "decode": [
+        {
+          "json": "u-1",
+          "value": {
+            "$external": "Uuid",
+            "value": "u-1"
+          }
+        }
+      ],
+      "encode": [
+        {
+          "value": {
+            "$external": "Uuid",
+            "value": "u-1"
+          },
+          "json": "u-1"
+        }
+      ]
+    },
+    {
+      "name": "aliases, tuples, external types, literals, unions, any and never (Version)",
+      "type": {
+        "ref": "Version"
+      },
+      "decode": [
+        {
+          "json": "v1",
+          "value": "v1"
+        },
+        {
+          "json": "v2",
+          "error": true
+        }
+      ],
+      "encode": [
+        {
+          "value": "v1",
+          "json": "v1"
+        }
+      ]
+    },
+    {
+      "name": "aliases, tuples, external types, literals, unions, any and never (Loose)",
+      "type": {
+        "ref": "Loose"
+      },
+      "decode": [
+        {
+          "json": 1,
+          "value": 1
+        },
+        {
+          "json": null,
+          "value": null
+        },
+        {
+          "json": "s",
+          "error": true
+        }
+      ],
+      "encode": [
+        {
+          "value": true,
+          "json": true
+        }
+      ]
+    },
+    {
+      "name": "aliases, tuples, external types, literals, unions, any and never (Free)",
+      "type": {
+        "ref": "Free"
+      },
+      "decode": [
+        {
+          "json": {
+            "a": [1]
+          },
+          "value": {
+            "a": [1]
+          }
+        }
+      ],
+      "encode": [
+        {
+          "value": [1],
+          "json": [1]
+        }
+      ]
+    },
+    {
+      "name": "aliases, tuples, external types, literals, unions, any and never (Nothing)",
+      "type": {
+        "ref": "Nothing"
+      },
+      "decode": [
+        {
+          "json": 1,
+          "error": true
+        }
+      ],
+      "encode": []
+    }
+  ]
+}

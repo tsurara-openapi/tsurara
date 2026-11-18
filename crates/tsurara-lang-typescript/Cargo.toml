@@ -1,0 +1,30 @@
+[package]
+name = "tsurara-lang-typescript"
+description = "TypeScript backend of tsurara: types, OperationDefs and call functions for @tsurara/client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+regress.workspace = true
+serde_json.workspace = true
+tsurara-backend.workspace = true
+tsurara-runtimes.workspace = true
+tsurara-sample.workspace = true
+tsurara-loader.workspace = true
+tsurara-naming.workspace = true
+tsurara-sem.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+jsonschema.workspace = true
+tsurara-loader.workspace = true
+tsurara-testkit = { path = "../tsurara-testkit" }
+serde_json.workspace = true
+tempfile.workspace = true
+url.workspace = true
+
+[lints]
+workspace = true

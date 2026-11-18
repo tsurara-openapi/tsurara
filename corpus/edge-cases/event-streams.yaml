@@ -1,0 +1,118 @@
+# Server-Sent Events, JSON Lines and JSON text sequences described by an
+# item schema.
+openapi: 3.1.1
+info: { title: event streams, version: "1" }
+paths:
+  /stream:
+    get:
+      operationId: stream
+      responses:
+        "200":
+          description: Every event carries JSON.
+          content:
+            text/event-stream:
+              schema: { type: string }
+              x-itemSchema:
+                type: object
+                properties:
+                  event: { type: string }
+                  data: { type: string }
+                  id: { type: string }
+                  retry: { type: integer, minimum: 0 }
+                required: [event, data]
+                oneOf:
+                  - properties:
+                      event: { const: note }
+                      data:
+                        type: string
+                        contentMediaType: application/json
+                        contentSchema: { $ref: "#/components/schemas/Note" }
+                  - properties:
+                      event: { const: noteDeleted }
+                      data:
+                        type: string
+                        contentMediaType: application/json
+                        contentSchema:
+                          type: object
+                          required: [id]
+                          properties: { id: { type: string } }
+  /mixed:
+    get:
+      operationId: mixed
+      responses:
+        "200":
+          description: Events with JSON and events with text.
+          content:
+            text/event-stream:
+              x-itemSchema:
+                oneOf:
+                  - $ref: "#/components/schemas/NoteEvent"
+                  - properties:
+                      event: { enum: [ping, pong] }
+                      data: { type: string }
+  /both:
+    get:
+      operationId: both
+      responses:
+        "200":
+          description: JSON or a stream, by the Accept header.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/Note" } }
+            text/event-stream:
+              x-itemSchema:
+                required: [id]
+                properties:
+                  data:
+                    type: string
+                    contentMediaType: application/json
+                    contentSchema: { $ref: "#/components/schemas/Note" }
+  /events:
+    get:
+      # A schema already has the name the event type would take.
+      operationId: events
+      responses:
+        "200":
+          description: ok
+          content:
+            text/event-stream:
+              x-itemSchema: { $ref: "#/components/schemas/EventsEvent" }
+  /lines:
+    get:
+      operationId: lines
+      responses:
+        "200":
+          description: JSON Lines.
+          content:
+            application/x-ndjson:
+              x-itemSchema: { $ref: "#/components/schemas/Note" }
+  /seq:
+    get:
+      operationId: seq
+      responses:
+        "200":
+          description: A JSON text sequence of inline objects.
+          content:
+            application/json-seq:
+              x-itemSchema:
+                type: object
+                required: [count]
+                properties: { count: { type: integer } }
+components:
+  schemas:
+    Note:
+      type: object
+      required: [id]
+      properties: { id: { type: string }, text: { type: string } }
+    NoteEvent:
+      type: object
+      properties:
+        event: { const: note }
+        data:
+          type: string
+          contentMediaType: application/json
+          contentSchema: { $ref: "#/components/schemas/Note" }
+    EventsEvent:
+      type: object
+      properties:
+        event: { const: tick }
+        data: { type: string }

@@ -1,0 +1,115 @@
+# 009 discriminator.
+
+- name: oneOf with discriminator and mapping
+  schemas:
+    Pet:
+      oneOf:
+        - { $ref: "#/components/schemas/Cat" }
+        - { $ref: "#/components/schemas/Dog" }
+        - { $ref: "#/components/schemas/Lizard" }
+      discriminator:
+        propertyName: petType
+        mapping:
+          cat: "#/components/schemas/Cat"
+          kitty: "#/components/schemas/Cat"
+          dog: Dog
+    Cat: { type: object, properties: { petType: { type: string }, meow: { type: boolean } } }
+    Dog: { type: object, properties: { petType: { type: string } } }
+    Lizard: { type: object, properties: { petType: { type: string } } }
+  expect:
+    Pet: "Cat & { petType: 'cat' | 'kitty' } | Dog & { petType: 'dog' } | Lizard & { petType: 'Lizard' }"
+
+- name: anyOf with discriminator without mapping
+  schemas:
+    Shape:
+      anyOf: [{ $ref: "#/components/schemas/Circle" }, { $ref: "#/components/schemas/Square" }]
+      discriminator: { propertyName: kind }
+    Circle: { type: object, properties: { r: { type: number } } }
+    Square: { type: object, properties: { s: { type: number } } }
+  expect:
+    Shape: "Circle & { kind: 'Circle' } | Square & { kind: 'Square' }"
+
+- name: children that inherit a discriminator with allOf get a literal
+  schemas:
+    Pet:
+      type: object
+      required: [petType]
+      properties: { petType: { type: string }, name: { type: string } }
+      discriminator:
+        propertyName: petType
+        mapping: { cat: "#/components/schemas/Cat" }
+    Cat:
+      allOf:
+        - { $ref: "#/components/schemas/Pet" }
+        - { type: object, properties: { meow: { type: boolean } } }
+    Dog:
+      allOf:
+        - { $ref: "#/components/schemas/Pet" }
+        - { type: object, properties: { bark: { type: boolean } } }
+  expect:
+    Pet: "{ petType: string; name?: string }"
+    Cat: "Pet & { meow?: boolean; petType: 'cat' }"
+    Dog: "Pet & { bark?: boolean; petType: 'Dog' }"
+
+- name: parent listing children with oneOf while children reference the parent
+  schemas:
+    Pet:
+      type: object
+      required: [petType]
+      properties: { petType: { type: string }, name: { type: string } }
+      oneOf: [{ $ref: "#/components/schemas/Cat" }, { $ref: "#/components/schemas/Dog" }]
+      discriminator: { propertyName: petType }
+    Cat:
+      allOf:
+        - { $ref: "#/components/schemas/Pet" }
+        - { type: object, properties: { meow: { type: boolean } } }
+    Dog:
+      allOf:
+        - { $ref: "#/components/schemas/Pet" }
+        - { type: object, properties: { bark: { type: boolean } } }
+  expect:
+    # The children pin `petType` themselves, so they are not tagged again.
+    Pet: "(Cat | Dog) & { petType: string; name?: string }"
+    Cat: "{ meow?: boolean; petType: 'Cat'; name?: string }"
+    Dog: "{ bark?: boolean; petType: 'Dog'; name?: string }"
+
+- name: defaultMapping (3.2) is not tagged
+  openapi: 3.2.0
+  schemas:
+    Event:
+      oneOf: [{ $ref: "#/components/schemas/Click" }]
+      discriminator:
+        propertyName: type
+        mapping: { click: "#/components/schemas/Click" }
+        defaultMapping: "#/components/schemas/Other"
+    Click: { type: object, properties: { type: { type: string } } }
+    Other: { type: object, properties: { type: { type: string } } }
+  expect:
+    Event: "Click & { type: 'click' } | Other"
+
+- name: a member that pins the discriminator itself is not tagged again
+  schemas:
+    Event:
+      oneOf:
+        - { $ref: "#/components/schemas/Follow" }
+        - { $ref: "#/components/schemas/Mention" }
+        - { $ref: "#/components/schemas/Other" }
+        - { $ref: "#/components/schemas/Renote" }
+      discriminator:
+        propertyName: type
+        mapping:
+          follow: "#/components/schemas/Follow"
+          mention: "#/components/schemas/Mention"
+          other: "#/components/schemas/Other"
+          renote: "#/components/schemas/Renote"
+          boost: "#/components/schemas/Renote"
+    # Pinned: no tag.
+    Follow: { type: object, required: [type], properties: { type: { const: follow } } }
+    # Optional in the member, so the tag still makes it required.
+    Mention: { type: object, properties: { type: { const: mention } } }
+    # Wider than the mapping, so the tag still narrows it.
+    Other: { type: object, required: [type], properties: { type: { enum: [other, misc] } } }
+    # Every value the member allows selects it.
+    Renote: { type: object, required: [type], properties: { type: { enum: [renote, boost] } } }
+  expect:
+    Event: "Follow | Mention & { type: 'mention' } | Other & { type: 'other' } | Renote"

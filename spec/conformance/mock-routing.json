@@ -1,0 +1,102 @@
+{
+  "description": "Routing of the mock transports (spec/README.md, Mock transports). Each vector lists routes as method and path template, a base path, and a request; `expect.route` is the index of the route that must answer (null: none), and `expect.params` the decoded path parameters.",
+  "vectors": [
+    {
+      "name": "a literal path",
+      "basePath": "",
+      "routes": [{ "method": "GET", "path": "/pets" }],
+      "request": { "method": "GET", "path": "/pets" },
+      "expect": { "route": 0, "params": {} }
+    },
+    {
+      "name": "a parameter matches one segment and is percent-decoded",
+      "basePath": "",
+      "routes": [{ "method": "GET", "path": "/pets/{petId}" }],
+      "request": { "method": "GET", "path": "/pets/a%20b" },
+      "expect": { "route": 0, "params": { "petId": "a b" } }
+    },
+    {
+      "name": "a parameter does not match an empty segment",
+      "basePath": "",
+      "routes": [{ "method": "GET", "path": "/pets/{petId}" }],
+      "request": { "method": "GET", "path": "/pets/" },
+      "expect": { "route": null }
+    },
+    {
+      "name": "a parameter does not match several segments",
+      "basePath": "",
+      "routes": [{ "method": "GET", "path": "/pets/{petId}" }],
+      "request": { "method": "GET", "path": "/pets/1/photos" },
+      "expect": { "route": null }
+    },
+    {
+      "name": "the method must match, in any case",
+      "basePath": "",
+      "routes": [{ "method": "POST", "path": "/pets" }, { "method": "get", "path": "/pets" }],
+      "request": { "method": "GET", "path": "/pets" },
+      "expect": { "route": 1, "params": {} }
+    },
+    {
+      "name": "literal segments win over parameters",
+      "basePath": "",
+      "routes": [
+        { "method": "GET", "path": "/pets/{petId}" },
+        { "method": "GET", "path": "/pets/mine" }
+      ],
+      "request": { "method": "GET", "path": "/pets/mine" },
+      "expect": { "route": 1, "params": {} }
+    },
+    {
+      "name": "the earlier of two routes as specific wins",
+      "basePath": "",
+      "routes": [
+        { "method": "GET", "path": "/pets/{a}" },
+        { "method": "GET", "path": "/pets/{b}" }
+      ],
+      "request": { "method": "GET", "path": "/pets/1" },
+      "expect": { "route": 0, "params": { "a": "1" } }
+    },
+    {
+      "name": "parameters with literal text in one segment",
+      "basePath": "",
+      "routes": [{ "method": "GET", "path": "/files/{name}.{ext}" }],
+      "request": { "method": "GET", "path": "/files/report.final.pdf" },
+      "expect": { "route": 0, "params": { "name": "report.final", "ext": "pdf" } }
+    },
+    {
+      "name": "the base path is removed first",
+      "basePath": "/api/v1",
+      "routes": [{ "method": "GET", "path": "/pets/{petId}" }],
+      "request": { "method": "GET", "path": "/api/v1/pets/7" },
+      "expect": { "route": 0, "params": { "petId": "7" } }
+    },
+    {
+      "name": "a request outside the base path does not match",
+      "basePath": "/api/v1",
+      "routes": [{ "method": "GET", "path": "/pets/{petId}" }],
+      "request": { "method": "GET", "path": "/pets/7" },
+      "expect": { "route": null }
+    },
+    {
+      "name": "the root path",
+      "basePath": "",
+      "routes": [{ "method": "GET", "path": "/" }],
+      "request": { "method": "GET", "path": "/" },
+      "expect": { "route": 0, "params": {} }
+    },
+    {
+      "name": "the query string is not part of the path",
+      "basePath": "",
+      "routes": [{ "method": "GET", "path": "/search" }],
+      "request": { "method": "GET", "path": "/search?q=a%2Fb" },
+      "expect": { "route": 0, "params": {} }
+    },
+    {
+      "name": "an encoded slash stays inside one parameter",
+      "basePath": "",
+      "routes": [{ "method": "GET", "path": "/files/{path}" }],
+      "request": { "method": "GET", "path": "/files/a%2Fb" },
+      "expect": { "route": 0, "params": { "path": "a/b" } }
+    }
+  ]
+}

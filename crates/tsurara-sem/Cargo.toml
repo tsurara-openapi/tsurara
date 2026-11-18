@@ -1,0 +1,31 @@
+[package]
+name = "tsurara-sem"
+description = "Analyzes OpenAPI definitions into the model that tsurara backends generate code from"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+schemars = { workspace = true, optional = true }
+indexmap.workspace = true
+tsurara-loader.workspace = true
+tsurara-naming.workspace = true
+tsurara-pretty.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tsurara-testkit = { path = "../tsurara-testkit" }
+tempfile.workspace = true
+
+[features]
+# JSON Schemas of the model (spec/sem-model.schema.json).
+schema = ["dep:schemars", "tsurara-loader/schema"]
+
+[lints]
+workspace = true

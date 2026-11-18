@@ -1,0 +1,65 @@
+# Names: reserved words, unusual property names, and schema names that equal names derived from
+# operations, a schema name that is not ASCII, and schema names that differ only in
+# separators and case.
+openapi: 3.1.0
+info: { title: names, version: "1" }
+paths:
+  /usage/things:
+    get:
+      operationId: usageThings
+      parameters:
+        - { name: class, in: query, schema: { type: string } }
+        - { name: page-size, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UsageThingsResponse" }
+  /import:
+    post:
+      operationId: import
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/import" }
+      responses: { "204": { description: ok } }
+components:
+  schemas:
+    S日本語:
+      type: object
+      properties:
+        id: { type: string }
+    UsageThingsResponse:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: "#/components/schemas/UsageThingsResult" } }
+    UsageThingsResult:
+      type: object
+      properties:
+        count: { type: integer }
+    UsageThingsData: { type: string }
+    import:
+      type: object
+      properties:
+        class: { type: string }
+        default: { type: string }
+        constructor: { type: string }
+        __proto__: { type: string }
+        "with space": { type: string }
+        "kebab-case": { type: string }
+        "1st": { type: integer }
+        "$ref": { type: string }
+        "日本語": { type: string }
+        "": { type: string }
+        None: { type: string }
+        self: { type: string }
+    Error: { type: object, properties: { message: { type: string } } }
+    Date: { type: string }
+    Promise: { type: string }
+    object: { type: string }
+    "with space": { type: string }
+    "123": { type: string }
+    PetStatus: { type: string, enum: [active] }
+    pet-status: { type: object, properties: { status: { $ref: "#/components/schemas/PetStatus" } } }
+    pet_status: { type: object, properties: { other: { $ref: "#/components/schemas/pet-status" } } }

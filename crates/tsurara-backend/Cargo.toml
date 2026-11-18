@@ -1,0 +1,26 @@
+[package]
+name = "tsurara-backend"
+description = "The interface between the tsurara model and the code generators for each language"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+schemars = { workspace = true, optional = true }
+tsurara-loader.workspace = true
+tsurara-naming.workspace = true
+tsurara-lower.workspace = true
+tsurara-sem.workspace = true
+tsurara-sample.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[features]
+# JSON Schemas of the manifest and the plugin protocol.
+schema = ["dep:schemars", "tsurara-sem/schema", "tsurara-lower/schema", "tsurara-naming/schema"]
+
+[lints]
+workspace = true

@@ -1,0 +1,17 @@
+# Operation ids with quotes and other punctuation (found in the GitHub definition with
+# `typescript.query: tanstack`): they are written into string literals.
+openapi: 3.1.0
+info: { title: operation ids, version: "1" }
+paths:
+  /user/external-keys:
+    get:
+      operationId: "List the external key configs registered on the user's organization"
+      responses:
+        "200":
+          {
+            description: ok,
+            content: { application/json: { schema: { type: array, items: { type: string } } } },
+          }
+    delete:
+      operationId: 'say "hello" \ back'
+      responses: { "204": { description: ok } }

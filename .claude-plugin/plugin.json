@@ -1,0 +1,13 @@
+{
+  "name": "tsurara",
+  "description": "Find the generated function for an OpenAPI endpoint and how to call it, generate and check clients with tsurara (TypeScript, Python, Rust, Go)",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": "https://github.com/tsurara-openapi/tsurara",
+  "mcpServers": {
+    "tsurara": {
+      "command": "tsurara",
+      "args": ["mcp"]
+    }
+  }
+}

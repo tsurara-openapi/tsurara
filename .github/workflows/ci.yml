@@ -1,0 +1,388 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its running checks; runs on main always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Actions are pinned by commit, with the version in a comment; Dependabot updates them
+# (.github/dependabot.yml) once a release is 5 days old.
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # Every checker is required, so that no check of the CLI's tests is skipped silently.
+      TSURARA_REQUIRE_CHECKERS: typescript,python,rust,go
+      INSTA_UPDATE: "no"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project runtimes/python --locked
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace --exclude tsurara-lang-typescript
+      # The example external backend passes the backend test.
+      - run: cargo run --quiet -p tsurara-cli -- test-backend --backend 'node examples/backend-typescript/backend.mjs' --check 'node examples/backend-typescript/check.mjs'
+      # The crates external backends depend on package as they would publish.
+      - run: cargo package -p tsurara-loader -p tsurara-sem -p tsurara-naming -p tsurara-pretty -p tsurara-lower -p tsurara-sample -p tsurara-backend
+
+  # One job per language backend: its tests with its checker required (design.md 18.12). A new
+  # language adds a matrix entry and installs its toolchain in a step conditioned on it.
+  language:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [typescript, python, rust, go]
+    env:
+      TSURARA_REQUIRE_CHECKERS: ${{ matrix.language }}
+      INSTA_UPDATE: "no"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: ${{ matrix.language }}
+      # tsc and pyright are npm packages; Python itself comes from mise.toml.
+      - run: pnpm install --frozen-lockfile
+      # Generated Python imports the runtime, which the tests install in its virtual environment.
+      - if: matrix.language == 'python'
+        run: uv sync --project runtimes/python --locked
+      - run: cargo test -p tsurara-lang-${{ matrix.language }}
+
+  # The Rust runtime (runtimes/rust, its own workspace): its tests, including the conformance vectors.
+  rust-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: runtimes/rust
+      - run: cargo fmt --manifest-path runtimes/rust/Cargo.toml --check
+      - run: cargo clippy --manifest-path runtimes/rust/Cargo.toml --all-targets --all-features -- -D warnings
+      # The types layer alone: no tokio, no reqwest.
+      - run: cargo clippy --manifest-path runtimes/rust/Cargo.toml --lib --no-default-features -- -D warnings
+      - run: cargo test --manifest-path runtimes/rust/Cargo.toml --no-default-features --test tagged_union
+      - run: cargo test --manifest-path runtimes/rust/Cargo.toml --all-features
+
+  # The Go runtime (runtimes/go, standard library only): its tests with the race detector,
+  # including the conformance vectors, vet and gofmt.
+  go-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - run: test -z "$(gofmt -l runtimes/go)"
+      - run: go -C runtimes/go vet ./...
+      - run: go -C runtimes/go test -race ./...
+      # The Go plugin SDK (packages/plugin-go).
+      - run: test -z "$(gofmt -l packages/plugin-go)"
+      - run: go -C packages/plugin-go vet ./...
+      - run: go -C packages/plugin-go test ./...
+
+  # The Python runtime (runtimes/python): its tests, including the conformance vectors, and pyright.
+  python-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project runtimes/python --locked
+      - run: uv run --project runtimes/python pytest
+      - run: node_modules/.bin/pyright -p runtimes/python
+      # The Python plugin SDK (packages/plugin-python).
+      - run: uv sync --project packages/plugin-python --locked
+      - run: uv run --project packages/plugin-python pytest
+      - run: node_modules/.bin/pyright -p packages/plugin-python
+
+  # Real-world definitions and edge cases through tsc (the tsconfig matrix, 7.0.2 and 5.8) and
+  # pyright, gofmt, go vet and go build, and cargo clippy (design.md 13.1). The
+  # corpus is pinned by sha256 in corpus/sources.json.
+  corpus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TSURARA_REQUIRE_CHECKERS: typescript,python,rust,go
+      TSURARA_REQUIRE_CORPUS: "1"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: target/corpus
+          key: corpus-${{ hashFiles('corpus/sources.json') }}
+      - run: node scripts/fetch-corpus.mjs
+      # Checks that passed with the same files and inputs are skipped; the key of each
+      # marker is a hash of everything the check depends on, so the latest cache is safe to reuse.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: target/checker-cache
+          key: checker-cache-${{ github.sha }}
+          restore-keys: checker-cache-
+      - run: uv sync --project runtimes/python --locked
+      - run: cargo test --release -p tsurara-cli --test corpus
+      # Random definitions; more cases run weekly in weekly.yml.
+      - run: cargo test --release -p tsurara-cli --test properties
+
+  # Performance: generation and tsc on the corpus, compared with the last run on main.
+  # The results are kept as an artifact; the last ones are the baseline in the cache.
+  bench:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: target/corpus
+          key: corpus-${{ hashFiles('corpus/sources.json') }}
+      - run: node scripts/fetch-corpus.mjs
+      - run: cargo build --release -p tsurara-cli
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: bench-baseline
+          key: bench-${{ github.sha }}
+          restore-keys: bench-
+      - run: node scripts/bench.mjs --baseline bench-baseline/results.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bench
+          path: target/bench/results.json
+      - run: mkdir -p bench-baseline && cp target/bench/results.json bench-baseline/
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: bench-baseline
+          key: bench-${{ github.sha }}
+
+  # examples/pnpm-monorepo: one generated package shared by a Vite app and a Node app.
+  example:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: cargo build --release -p tsurara-cli
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @tsurara/client build
+      - run: pnpm --dir examples/pnpm-monorepo install --frozen-lockfile
+      - run: pnpm --dir examples/pnpm-monorepo --filter @acme/openapi check
+      - run: pnpm --dir examples/pnpm-monorepo typecheck
+      - run: pnpm --dir examples/pnpm-monorepo test
+
+  # examples/react-tanstack: a Next.js app with TanStack Query, its tests and its build.
+  example-react:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: cargo build --release -p tsurara-cli
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @tsurara/client build
+      - run: pnpm --dir examples/react-tanstack install --frozen-lockfile
+      - run: pnpm --dir examples/react-tanstack check
+      - run: pnpm --dir examples/react-tanstack test
+      # `next build` writes `.next/types`, which `next-env.d.ts` imports, so the build comes first.
+      - run: pnpm --dir examples/react-tanstack build
+      - run: pnpm --dir examples/react-tanstack typecheck
+
+  # The oldest supported Node runs generated code with type stripping (design.md chapter 17).
+  node-22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MISE_NODE_VERSION: "22.18.0"
+      TSURARA_REQUIRE_NODE: "1"
+      TSURARA_REQUIRE_CHECKERS: typescript
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: node --version
+      - run: pnpm install --frozen-lockfile
+      - run: cargo test -p tsurara-lang-typescript --test type_stripping
+
+  # The minimum supported Rust version, with the toolchain rustup installs on the runner.
+  msrv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - run: rustup toolchain install 1.85 --profile minimal
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: msrv
+      - run: cargo +1.85 check --workspace
+      - run: cargo +1.85 check --manifest-path runtimes/rust/Cargo.toml
+
+  typescript:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # @tsurara/hermes-check runs the client on Hermes.
+      TSURARA_REQUIRE_HERMES: "1"
+      TSURARA_HERMES: ${{ github.workspace }}/.hermes/hermes
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - name: Hermes VM (the last Hermes CLI release, checked against its sha256)
+        run: |
+          mkdir -p .hermes
+          curl -fsSL -o .hermes/hermes-cli-linux.tar.gz https://github.com/facebook/hermes/releases/download/v0.13.0/hermes-cli-linux.tar.gz
+          echo "aead6eb0b8f563bb022354352eae32dad96c933330b6c1941b6db17674ca68ae  .hermes/hermes-cli-linux.tar.gz" | sha256sum -c -
+          tar -xzf .hermes/hermes-cli-linux.tar.gz -C .hermes
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm test
+      # Every published package has the same version (the release workflow requires it).
+      - run: node scripts/release-version.mjs
+
+  # Dependencies: RustSec advisories, licenses and sources of every crate (deny.toml), known
+  # vulnerabilities of the npm packages that ship (dev dependencies only run in CI), and the
+  # notices a binary release ships (scripts/third-party-licenses.mjs).
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          manifest-path: runtimes/rust/Cargo.toml
+          arguments: --config ${{ github.workspace }}/deny.toml
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - run: pnpm audit --prod
+      - run: pnpm --dir examples/pnpm-monorepo audit --prod
+      - run: pnpm --dir examples/react-tanstack audit --prod
+      - run: node scripts/third-party-licenses.mjs
+
+  # The workflows themselves (actionlint, with shellcheck on the `run` scripts).
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+      - run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+
+  # The CLI ships as a binary for every platform: it builds on macOS and Windows, and generates
+  # and checks code there (paths, line endings). The language checkers run on Linux only.
+  cross-platform:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: cargo build --release -p tsurara-cli
+      - name: Generate and check every language
+        run: |
+          mkdir -p "$RUNNER_TEMP/smoke"
+          cp crates/tsurara-lang-typescript/tests/fixtures/v3.0-petstore.yaml "$RUNNER_TEMP/smoke/openapi.yaml"
+          cat > "$RUNNER_TEMP/smoke/tsurara.config.yaml" <<'EOF'
+          input: openapi.yaml
+          targets:
+            - { name: ts, output: ts, typescript: { query: tanstack, validators: zod, mocks: msw } }
+            - { name: py, output: py, language: python }
+            - { name: rs, output: rs, language: rust }
+            - { name: go, output: go, language: go, go: { package: api } }
+          EOF
+          bin="$GITHUB_WORKSPACE/target/release/tsurara"
+          cd "$RUNNER_TEMP/smoke"
+          "$bin" generate
+          "$bin" check
+          "$bin" inspect operation listPets --target ts
+      # The crates without language checkers.
+      - run: cargo test -p tsurara-loader -p tsurara-sem -p tsurara-naming -p tsurara-pretty -p tsurara-lower -p tsurara-sample -p tsurara-backend
+
+  # One status for branch protection: every job above passed (bench runs on main only).
+  ci:
+    if: always()
+    needs:
+      - rust
+      - language
+      - rust-runtime
+      - go-runtime
+      - python-runtime
+      - corpus
+      - example
+      - example-react
+      - node-22
+      - msrv
+      - typescript
+      - audit
+      - actionlint
+      - cross-platform
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          for r in $RESULTS; do [ "$r" = success ] || exit 1; done

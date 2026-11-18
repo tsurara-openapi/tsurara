@@ -1,0 +1,27 @@
+# allOf inheritance where the child narrows a field of its base: nullable to non-null, and optional
+# to required.
+openapi: 3.1.0
+info: { title: inheritance, version: "1" }
+paths: {}
+components:
+  schemas:
+    Label:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        archived_at: { type: [string, "null"] }
+        archived_by: { anyOf: [{ $ref: "#/components/schemas/User" }, { type: "null" }] }
+        color: { type: string }
+    ArchivedLabel:
+      allOf:
+        - $ref: "#/components/schemas/Label"
+        - type: object
+          required: [archived_at, archived_by, color]
+          properties:
+            archived_at: { type: string }
+            archived_by: { $ref: "#/components/schemas/User" }
+    User:
+      type: object
+      properties:
+        login: { type: string }

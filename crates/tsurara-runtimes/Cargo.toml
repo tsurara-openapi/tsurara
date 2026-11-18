@@ -1,0 +1,11 @@
+[package]
+name = "tsurara-runtimes"
+description = "The sources of the tsurara runtimes, embedded for vendoring (runtime: vendor)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true

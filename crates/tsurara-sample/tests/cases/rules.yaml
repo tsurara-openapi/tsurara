@@ -1,0 +1,151 @@
+# Sample values (design.md 18.7.1). Each case puts `schema` (or `schemas`) in
+# `components.schemas` and expects the sample of `T` (or of each name in `expect`). `warnings` lists the
+# expected warning codes; without it there must be none.
+
+- name: an example wins
+  schema: { type: string, example: hello }
+  expect: hello
+
+- name: the first of examples wins
+  schema: { type: integer, examples: [7, 8] }
+  expect: 7
+
+- name: an example of the wrong type is ignored
+  schema: { type: integer, example: seven }
+  expect: 1
+
+- name: default, then const, then enum
+  schemas:
+    D: { type: integer, default: 5 }
+    C: { const: fixed }
+    E: { type: string, enum: [b, a] }
+  expect: { D: 5, C: fixed, E: b }
+
+- name: strings by format
+  schema:
+    type: object
+    required: [at, day, id, mail, site, host, v4, v6]
+    properties:
+      at: { type: string, format: date-time }
+      day: { type: string, format: date }
+      id: { type: string, format: uuid }
+      mail: { type: string, format: email }
+      site: { type: string, format: uri }
+      host: { type: string, format: hostname }
+      v4: { type: string, format: ipv4 }
+      v6: { type: string, format: ipv6 }
+  expect:
+    at: "2024-01-01T00:00:00Z"
+    day: "2024-01-01"
+    id: "00000000-0000-4000-8000-5d0a6698ca7e"
+    mail: user@example.com
+    site: https://example.com/
+    host: example.com
+    v4: 192.0.2.1
+    v6: "2001:db8::1"
+
+- name: a string is named after its property and respects its length
+  schema:
+    type: object
+    required: [name, code, tiny]
+    properties:
+      name: { type: string }
+      code: { type: string, minLength: 8 }
+      tiny: { type: string, maxLength: 2 }
+  expect: { name: name, code: codexxxx, tiny: ti }
+
+- name: numbers respect minimum, maximum and multipleOf
+  schema:
+    type: object
+    required: [a, b, c, d, e]
+    properties:
+      a: { type: integer, minimum: 10 }
+      b: { type: integer, maximum: 0 }
+      c: { type: integer, exclusiveMinimum: 10 }
+      d: { type: integer, minimum: 3, multipleOf: 5 }
+      e: { type: number }
+  expect: { a: 10, b: 0, c: 11, d: 5, e: 1.5 }
+
+- name: arrays have one item, or minItems
+  schemas:
+    One: { type: array, items: { type: boolean } }
+    Three: { type: array, items: { type: integer }, minItems: 3 }
+  expect: { One: [true], Three: [1, 1, 1] }
+
+- name: optional properties are included, references are followed
+  schemas:
+    Pet:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer }
+        tag: { $ref: "#/components/schemas/Tag" }
+    Tag: { type: object, properties: { label: { type: string } } }
+  expect:
+    Pet: { id: 1, tag: { label: label } }
+    Tag: { label: label }
+
+- name: a union takes its first member
+  schema: { oneOf: [{ type: integer }, { type: string }] }
+  expect: 1
+
+- name: a discriminated union sets the tag of its first mapping
+  schemas:
+    Pet:
+      oneOf: [{ $ref: "#/components/schemas/Cat" }, { $ref: "#/components/schemas/Dog" }]
+      discriminator:
+        {
+          propertyName: kind,
+          mapping: { cat: "#/components/schemas/Cat", dog: "#/components/schemas/Dog" },
+        }
+    Cat:
+      {
+        type: object,
+        required: [kind],
+        properties: { kind: { type: string }, lives: { type: integer } },
+      }
+    Dog: { type: object, required: [kind], properties: { kind: { type: string } } }
+  expect:
+    Pet: { kind: cat, lives: 1 }
+
+- name: allOf merges its members
+  schemas:
+    Named: { type: object, required: [name], properties: { name: { type: string } } }
+    T:
+      allOf:
+        - $ref: "#/components/schemas/Named"
+        - { type: object, required: [age], properties: { age: { type: integer } } }
+  expect: { T: { name: name, age: 1 } }
+
+- name: an optional cycle is cut
+  schema:
+    type: object
+    required: [id]
+    properties:
+      id: { type: integer }
+      parent: { $ref: "#/components/schemas/T" }
+  expect: { id: 1, parent: { id: 1 } }
+
+- name: a required cycle stops with a warning
+  schema:
+    type: object
+    required: [next]
+    properties:
+      next: { $ref: "#/components/schemas/T" }
+  expect: { next: { next: {} } }
+  warnings: [sample-cycle]
+
+- name: a pattern without an example is a placeholder with a warning
+  schema: { type: string, pattern: "^[A-Z]{3}$" }
+  expect: string
+  warnings: [sample-pattern]
+
+- name: a pattern with an example uses the example
+  schema: { type: string, pattern: "^[A-Z]{3}$", example: ABC }
+  expect: ABC
+
+- name: nullable and maps
+  schemas:
+    N: { type: [string, "null"] }
+    M: { type: object, additionalProperties: { type: integer } }
+  expect: { N: string, M: {} }

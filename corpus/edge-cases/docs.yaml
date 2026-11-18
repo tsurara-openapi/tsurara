@@ -1,0 +1,34 @@
+# Descriptions with characters that end comments and strings in generated code.
+openapi: 3.1.0
+info: { title: docs, version: "1" }
+paths: {}
+components:
+  schemas:
+    Quoted:
+      description: 'Ends with a quote "[About](https://example.com)."'
+      type: object
+      properties:
+        a:
+          description: 'Triple """ quotes and a trailing backslash \'
+          type: string
+        b:
+          description: "Closes a comment */ and opens one /* and ends with */"
+          type: string
+    Backslash:
+      description: 'Ends with a backslash \'
+      type: string
+    Single:
+      description: "Ends with a single quote '"
+      type: object
+      properties:
+        x: { type: string }
+    Tabs:
+      description: "Indented with tabs:\n\tfirst\n\t\tsecond\n\n```json\n{\"a\": 1}\n```\n\nand an unlabelled fence:\n\n```\nplain\n```\n"
+      type: object
+      properties:
+        y: { type: string }
+    Doubled:
+      description: "Doubled ``backticks'' as in Stripe's `rate_type`` text."
+      type: object
+      properties:
+        z: { type: string, description: "Also ``here''." }

@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../schema/tsurara.config.schema.json
+# Written by `tsurara init --preset react-query`, with nothing changed but the comments.
+input: openapi.yaml
+output: src/generated
+typescript:
+  importExtension: none
+  query: tanstack
+  validators: zod
+  mocks: msw

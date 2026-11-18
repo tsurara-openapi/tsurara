@@ -1,0 +1,25 @@
+# Path templates and path parameters that disagree. The first operation (from a Huma v2
+# document) has a template variable without a parameter, which becomes a
+# required string; the second declares a path parameter that is not in its template, which is left
+# out. Every backend must generate code that compiles for both.
+openapi: 3.1.0
+info: { title: path template, version: "1" }
+paths:
+  /api/realtime/echo-channels/{id}/messages:
+    post:
+      operationId: echo-post
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { text: { type: string } } }
+      responses:
+        "204": { description: done }
+  /pets/{petId}:
+    parameters:
+      - { name: petId, in: path, required: true, schema: { type: integer } }
+    get:
+      operationId: getPet
+      parameters:
+        - { name: ownerId, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: done }

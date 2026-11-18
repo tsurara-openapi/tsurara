@@ -1,0 +1,1711 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "semVersion": {
+      "description": "Version of this JSON form (`SEM_VERSION`).",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "version": {
+      "$ref": "#/$defs/SpecVersion"
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schemas": {
+      "description": "Named types, in the order of components, followed by the hoisted types.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TypeDecl"
+      }
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Operation"
+      }
+    },
+    "webhooks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Operation"
+      }
+    },
+    "channels": {
+      "description": "The channels of `x-event-channels`, in document order.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Channel"
+      }
+    },
+    "servers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Server"
+      }
+    },
+    "securitySchemes": {
+      "description": "The names in `components.securitySchemes`, in order.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    },
+    "names": {
+      "description": "Name requests, in the order backends must claim them (design.md 18.4.6).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NameRequest"
+      }
+    }
+  },
+  "required": [
+    "semVersion",
+    "version",
+    "schemas",
+    "operations",
+    "webhooks",
+    "servers",
+    "warnings",
+    "names"
+  ],
+  "$defs": {
+    "SpecVersion": {
+      "description": "Definition version.",
+      "type": "string",
+      "enum": [
+        "swagger2",
+        "v3_0",
+        "v3_1",
+        "v3_2"
+      ]
+    },
+    "TypeDecl": {
+      "description": "Declaration of a named type.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NameId"
+        },
+        "preferredName": {
+          "description": "The name the definition asks for, before any language's rules (the components key, a title,\nor a derived name). `Writable` declarations share it with the declaration they split from.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The identifier a backend assigned. Empty in the model; backends fill it in their own copy.",
+          "type": "string"
+        },
+        "ty": {
+          "$ref": "#/$defs/Type"
+        },
+        "doc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Doc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "loc": {
+          "description": "Location of the original schema.",
+          "$ref": "#/$defs/Loc"
+        },
+        "writable": {
+          "description": "Whether this is the `Writable` type.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "preferredName",
+        "name",
+        "ty",
+        "loc",
+        "writable"
+      ]
+    },
+    "NameId": {
+      "description": "Identifies a requested name. References in the model (`Type::Named`) point to it.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "Type": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "unknown",
+            "never",
+            "null",
+            "undefined",
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        {
+          "description": "An integer, number or string from a schema, with its `format`. Backends lower it to their\nown types; TypeScript prints `number` or `string` (design.md 18.4.1).",
+          "type": "object",
+          "properties": {
+            "scalar": {
+              "$ref": "#/$defs/Scalar"
+            }
+          },
+          "required": [
+            "scalar"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A schema mapped to an external type per language (`x-tsurara-type`, `typeMappings`,\n`overrides`). A backend without an entry uses `schema` (design.md 18.4.4).",
+          "type": "object",
+          "properties": {
+            "mapped": {
+              "$ref": "#/$defs/Mapped"
+            }
+          },
+          "required": [
+            "mapped"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "An inline object, enum or union, with what a backend needs to name it if it hoists it\n(design.md 18.4.2). TypeScript writes it inline.",
+          "type": "object",
+          "properties": {
+            "inline": {
+              "$ref": "#/$defs/Inline"
+            }
+          },
+          "required": [
+            "inline"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A raw byte value: a multipart part value or an HTTP body that is not JSON (design.md 6.4).\nTypeScript lowers it to `Blob | File`.",
+          "type": "string",
+          "const": "binary"
+        },
+        {
+          "description": "`enum` with literal values. TypeScript lowers it to a union of literals (design.md 18.4.1).",
+          "type": "object",
+          "properties": {
+            "enum": {
+              "$ref": "#/$defs/Enum"
+            }
+          },
+          "required": [
+            "enum"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "literal": {
+              "$ref": "#/$defs/Literal"
+            }
+          },
+          "required": [
+            "literal"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Reference to a named type by its final identifier. Only backends produce it, when they resolve\n`Named`.",
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "ref"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Reference to a declaration by its name request (design.md 18.4.2).",
+          "type": "object",
+          "properties": {
+            "named": {
+              "$ref": "#/$defs/NameRef"
+            }
+          },
+          "required": [
+            "named"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "array": {
+              "$ref": "#/$defs/Type"
+            }
+          },
+          "required": [
+            "array"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "tuple": {
+              "$ref": "#/$defs/Tuple"
+            }
+          },
+          "required": [
+            "tuple"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "union": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Type"
+              }
+            }
+          },
+          "required": [
+            "union"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "intersection": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Type"
+              }
+            }
+          },
+          "required": [
+            "intersection"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "`oneOf` or `anyOf` as written: members are not flattened or deduplicated, because that is not\nexact for `oneOf` (design.md 18.4.1). TypeScript lowers it to a union.",
+          "type": "object",
+          "properties": {
+            "choice": {
+              "$ref": "#/$defs/Choice"
+            }
+          },
+          "required": [
+            "choice"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "The values a discriminator property takes in a schema that inherits the discriminator from its\nparent through `allOf`. TypeScript lowers it to `{ property: 'value' }`.",
+          "type": "object",
+          "properties": {
+            "tag": {
+              "$ref": "#/$defs/Tag"
+            }
+          },
+          "required": [
+            "tag"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "object": {
+              "$ref": "#/$defs/Object"
+            }
+          },
+          "required": [
+            "object"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A type defined outside the generator. Used by `x-tsurara-type` and `typeMappings`.",
+          "type": "object",
+          "properties": {
+            "external": {
+              "$ref": "#/$defs/External"
+            }
+          },
+          "required": [
+            "external"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Scalar": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ScalarKind"
+        },
+        "format": {
+          "description": "`int64`, `double`, `date-time`, `uuid`, ...",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "ScalarKind": {
+      "type": "string",
+      "enum": [
+        "integer",
+        "number",
+        "string"
+      ]
+    },
+    "Mapped": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "description": "External type per language (`typescript`, `rust`, ...).",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/External"
+          }
+        },
+        "schema": {
+          "description": "The type the schema has without the mapping.",
+          "$ref": "#/$defs/Type"
+        },
+        "loc": {
+          "description": "Where the mapping is written, for warnings.",
+          "$ref": "#/$defs/Loc"
+        }
+      },
+      "required": [
+        "entries",
+        "schema",
+        "loc"
+      ]
+    },
+    "External": {
+      "description": "An external type. With `import`, files that use the type get an `import type`.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "import": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Import"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "code"
+      ]
+    },
+    "Import": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "description": "Module specifier. If it starts with `.`, it is relative to the output root.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "name"
+      ]
+    },
+    "Loc": {
+      "description": "A location in a definition. A pair of the document URL (without fragment) and a JSON Pointer.",
+      "type": "object",
+      "properties": {
+        "doc": {
+          "type": "string"
+        },
+        "pointer": {
+          "description": "Escaped JSON Pointer. The root is `\"\"`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "doc",
+        "pointer"
+      ]
+    },
+    "Inline": {
+      "type": "object",
+      "properties": {
+        "preferredName": {
+          "description": "Derived from the owner's preferred name and the path to the schema (`PetOwner`).",
+          "type": "string"
+        },
+        "loc": {
+          "description": "Where the schema is written. Its JSON Pointer is the key of `naming.overrides`.",
+          "$ref": "#/$defs/Loc"
+        },
+        "ty": {
+          "$ref": "#/$defs/Type"
+        }
+      },
+      "required": [
+        "preferredName",
+        "loc",
+        "ty"
+      ]
+    },
+    "Enum": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "description": "The values in definition order, without duplicates and without `null`.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Literal"
+          }
+        },
+        "nullable": {
+          "description": "Whether `null` is one of the values.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "values",
+        "nullable"
+      ]
+    },
+    "Literal": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "string": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "string"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "number": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "number"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "boolean": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "boolean"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "NameRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NameId"
+        },
+        "hint": {
+          "description": "The preferred name, used only to order members deterministically inside the model.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "hint"
+      ]
+    },
+    "Tuple": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Type"
+          }
+        },
+        "required": {
+          "description": "Number of leading elements that are required. The rest of `items` are optional (`T?`).",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "rest": {
+          "description": "Type of the rest elements. `None` makes the length fixed.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Type"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "required"
+      ]
+    },
+    "Choice": {
+      "type": "object",
+      "properties": {
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Type"
+          }
+        },
+        "exclusive": {
+          "description": "`oneOf` is exclusive, `anyOf` is not.",
+          "type": "boolean"
+        },
+        "discriminator": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Discriminator"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "members",
+        "exclusive"
+      ]
+    },
+    "Discriminator": {
+      "type": "object",
+      "properties": {
+        "property": {
+          "type": "string"
+        },
+        "values": {
+          "description": "The values that select each member, in member order. Empty for a member that is not a\nreference or has no value.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "default": {
+          "description": "The `defaultMapping` target (3.2), when it is not one of the members.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Type"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "property",
+        "values"
+      ]
+    },
+    "Tag": {
+      "type": "object",
+      "properties": {
+        "property": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "property",
+        "values"
+      ]
+    },
+    "Object": {
+      "type": "object",
+      "properties": {
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Property"
+          }
+        },
+        "index": {
+          "description": "Value type of the index signature `[key: string]: T`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Type"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "properties"
+      ]
+    },
+    "Property": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "ty": {
+          "$ref": "#/$defs/Type"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "readonly": {
+          "type": "boolean"
+        },
+        "doc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Doc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "ty",
+        "optional",
+        "readonly"
+      ]
+    },
+    "Doc": {
+      "description": "Documentation of a declaration or property: a description and tags such as `deprecated`,\n`default`, `example`, `format` and constraints (design.md 18.4.5).",
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tags": {
+          "description": "Tags with their values as written in the definition (`\"\"` for tags without a value, such as\n`deprecated`). Printers render them with `Doc::tag_text`.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              true
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "required": [
+        "tags"
+      ]
+    },
+    "Operation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The `operationId`, or a name built from the method and path if absent.",
+          "type": "string"
+        },
+        "nameId": {
+          "description": "The name request of the operation.",
+          "$ref": "#/$defs/NameId"
+        },
+        "name": {
+          "description": "Name of the call function. Empty in the model; backends fill it in their own copy.",
+          "type": "string"
+        },
+        "typeNames": {
+          "description": "Type names derived from the operation, by template (`{P}Result` → `GetPetByIdResult`).\nEmpty in the model, like `name`; a backend fills in the names it assigned (design.md 6.6).",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "method": {
+          "description": "Upper-case method name.",
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "doc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Doc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Param"
+          }
+        },
+        "body": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Body"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "responses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Response"
+          }
+        },
+        "callbacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Callback"
+          }
+        },
+        "security": {
+          "description": "Authentication alternatives in order: the operation's `security`, or the root's. Each lists\nthe schemes it needs together; an empty alternative means none. Empty without any `security`.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/SecurityUse"
+            }
+          }
+        },
+        "pagination": {
+          "description": "How a read is paginated (`x-tsurara-pagination`), for infinite queries.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Pagination"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "loc": {
+          "$ref": "#/$defs/Loc"
+        }
+      },
+      "required": [
+        "id",
+        "nameId",
+        "name",
+        "method",
+        "path",
+        "tags",
+        "params",
+        "responses",
+        "callbacks",
+        "loc"
+      ]
+    },
+    "Param": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "location": {
+          "$ref": "#/$defs/ParamIn"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "ty": {
+          "$ref": "#/$defs/Type"
+        },
+        "doc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Doc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "style": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "explode": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "allowReserved": {
+          "type": "boolean"
+        },
+        "contentType": {
+          "description": "Media type of a parameter given with `content`. The value is serialized in this format.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "location",
+        "required",
+        "ty",
+        "allowReserved"
+      ]
+    },
+    "ParamIn": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "path",
+            "query",
+            "header",
+            "cookie"
+          ]
+        },
+        {
+          "description": "`in: querystring` from 3.2. Represents the whole query string as one value.",
+          "type": "string",
+          "const": "queryString"
+        }
+      ]
+    },
+    "Body": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "contents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MediaContent"
+          }
+        },
+        "doc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Doc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "required",
+        "contents"
+      ]
+    },
+    "MediaContent": {
+      "type": "object",
+      "properties": {
+        "mediaType": {
+          "type": "string"
+        },
+        "ty": {
+          "$ref": "#/$defs/Type"
+        },
+        "encoding": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Encoding"
+          }
+        },
+        "bodyKind": {
+          "$ref": "#/$defs/BodyKind"
+        },
+        "events": {
+          "description": "The events of a `text/event-stream` response whose media type has an item schema. The body\nkind stays `stream`; a backend whose runtime reads events uses this instead (design.md 8.5).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Events"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "items": {
+          "description": "The items of a JSON Lines or JSON text sequence response whose media type has an item\nschema. The body kind stays `stream`, as with `events` (design.md 8.5).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Items"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "mediaType",
+        "ty",
+        "encoding",
+        "bodyKind"
+      ]
+    },
+    "Encoding": {
+      "type": "object",
+      "properties": {
+        "property": {
+          "type": "string"
+        },
+        "contentType": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "style": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "explode": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "property"
+      ]
+    },
+    "BodyKind": {
+      "description": "How to parse a response body (design.md 8.5).",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "json",
+            "text",
+            "blob",
+            "stream",
+            "none"
+          ]
+        },
+        {
+          "description": "Decided by the actual Content-Type (wildcard media types with a schema that is not binary).",
+          "type": "string",
+          "const": "auto"
+        }
+      ]
+    },
+    "Events": {
+      "description": "The events of a Server-Sent Events stream, from `itemSchema` (3.2) or `x-itemSchema`.",
+      "type": "object",
+      "properties": {
+        "ty": {
+          "description": "One event as a runtime hands it over: an object with `event`, `data`, `id` and `retry`, or a\nunion of such objects. `data` has the type of its `contentSchema` where it is JSON.",
+          "$ref": "#/$defs/Type"
+        },
+        "json": {
+          "description": "Which events carry JSON in `data`; `None` when none does.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonEvents"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "ty"
+      ]
+    },
+    "JsonEvents": {
+      "oneOf": [
+        {
+          "description": "Every event.",
+          "type": "string",
+          "const": "all"
+        },
+        {
+          "description": "The events with these names.",
+          "type": "object",
+          "properties": {
+            "named": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "named"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Items": {
+      "description": "The items of a sequential JSON response, from `itemSchema` (3.2) or `x-itemSchema`.",
+      "type": "object",
+      "properties": {
+        "ty": {
+          "description": "The type of one item, in the JSON context.",
+          "$ref": "#/$defs/Type"
+        },
+        "framing": {
+          "$ref": "#/$defs/Framing"
+        }
+      },
+      "required": [
+        "ty",
+        "framing"
+      ]
+    },
+    "Framing": {
+      "description": "How the items of a sequential JSON body are separated.",
+      "oneOf": [
+        {
+          "description": "One JSON text per line (`application/jsonl`, `application/x-ndjson`, ...).",
+          "type": "string",
+          "const": "lines"
+        },
+        {
+          "description": "JSON texts each starting with the record separator U+001E (`application/json-seq`, RFC 7464).",
+          "type": "string",
+          "const": "recordSeparator"
+        }
+      ]
+    },
+    "Response": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/Status"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MediaContent"
+          }
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Property"
+          }
+        }
+      },
+      "required": [
+        "status",
+        "contents",
+        "headers"
+      ]
+    },
+    "Status": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "default"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0,
+              "maximum": 65535
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A range such as `2XX`. The value is the leading digit.",
+          "type": "object",
+          "properties": {
+            "range": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0,
+              "maximum": 255
+            }
+          },
+          "required": [
+            "range"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Callback": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Operation"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "operations"
+      ]
+    },
+    "SecurityUse": {
+      "description": "A security scheme an authentication alternative of an operation uses, with what a runtime needs\nto place the credential (spec/operation-def.schema.json).",
+      "type": "object",
+      "properties": {
+        "scheme": {
+          "description": "The name in `components.securitySchemes`.",
+          "type": "string"
+        },
+        "type": {
+          "description": "`apiKey`, `http`, `oauth2`, `openIdConnect` or `mutualTLS`.",
+          "type": "string"
+        },
+        "in": {
+          "description": "`apiKey`: `header`, `query` or `cookie`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "`apiKey`: the header, query or cookie name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "httpScheme": {
+          "description": "`http`: the Authorization scheme (`bearer`, `basic`, ...).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "scheme",
+        "type"
+      ]
+    },
+    "Pagination": {
+      "description": "How a read is paginated: OpenAPI does not describe it, so it is written in\n`x-tsurara-pagination` (or in a language's configuration).",
+      "type": "object",
+      "properties": {
+        "param": {
+          "description": "The request field that carries the page: `query.cursor`, `header.X-Page`, `path.page` or\n`cookie.page` (the parameter's `in`, then its name).",
+          "type": "string"
+        },
+        "initial": {
+          "description": "The value of the first page; without it, the first request leaves the field out."
+        },
+        "next": {
+          "description": "JSON Pointer to the next page's value in a success body; absent or `null` there means no more\npages. Without it, the app says how to find the next page.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "previous": {
+          "description": "JSON Pointer to the previous page's value, for queries read in both directions.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "param"
+      ]
+    },
+    "Channel": {
+      "description": "An event channel of `x-event-channels`: messages such as the updates of a Mercure hub,\nwhich are not the response of an operation.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The key in `x-event-channels`.",
+          "type": "string"
+        },
+        "nameId": {
+          "$ref": "#/$defs/NameId"
+        },
+        "ident": {
+          "description": "The identifier a backend assigned. Empty in the model; backends fill it in their own copy.",
+          "type": "string"
+        },
+        "typeNames": {
+          "description": "Type names derived from the channel, by template (`{P}Message`). Empty in the model, like\n`ident`.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "doc": {
+          "description": "`summary` and `description`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Doc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "channel": {
+          "description": "The topic template (`board/{boardId}`), relative to the deployment's topic prefix.",
+          "type": "string"
+        },
+        "parameters": {
+          "description": "The template's variables with their types, in the order of `parameters`.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChannelParam"
+          }
+        },
+        "private": {
+          "description": "Whether the hub requires a subscriber claim; informational.",
+          "type": "boolean"
+        },
+        "contents": {
+          "description": "The message payload by media type, as a request or response body's content.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MediaContent"
+          }
+        },
+        "loc": {
+          "$ref": "#/$defs/Loc"
+        }
+      },
+      "required": [
+        "name",
+        "nameId",
+        "channel",
+        "parameters",
+        "private",
+        "contents",
+        "loc"
+      ]
+    },
+    "ChannelParam": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "ty": {
+          "$ref": "#/$defs/Type"
+        }
+      },
+      "required": [
+        "name",
+        "ty"
+      ]
+    },
+    "Server": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ServerVariable"
+          }
+        }
+      },
+      "required": [
+        "url",
+        "variables"
+      ]
+    },
+    "ServerVariable": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "default": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "default",
+        "values"
+      ]
+    },
+    "Warning": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/WarningKind"
+        },
+        "loc": {
+          "$ref": "#/$defs/Loc"
+        },
+        "message": {
+          "type": "string"
+        },
+        "language": {
+          "description": "The backend that reported it (`typescript`), or `None` for warnings about the definition itself\n(design.md 18.4.5).",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "loc",
+        "message"
+      ]
+    },
+    "WarningKind": {
+      "oneOf": [
+        {
+          "description": "A keyword the model cannot represent was dropped (`not`, `if`, `dependentSchemas`), or a value\ncannot be what the definition says (`format: binary` inside JSON).",
+          "type": "string",
+          "const": "unsupported"
+        },
+        {
+          "description": "`$dynamicRef` was resolved statically per reference site.",
+          "type": "string",
+          "const": "dynamicRef"
+        },
+        {
+          "description": "A name was changed to avoid a collision.",
+          "type": "string",
+          "const": "renamed"
+        },
+        {
+          "description": "A reference could not be resolved and became `unknown`.",
+          "type": "string",
+          "const": "unresolvedRef"
+        },
+        {
+          "description": "The definition has an unexpected shape and was interpreted as far as possible.",
+          "type": "string",
+          "const": "invalidDefinition"
+        },
+        {
+          "description": "A keyword written next to `$ref` was ignored (OpenAPI 3.0 ignores all siblings of `$ref`).",
+          "type": "string",
+          "const": "ignoredSibling"
+        },
+        {
+          "description": "A wildcard media type (`*/*`, `application/*`) with a schema that is not binary. The body is\nparsed by its actual Content-Type (`auto`) and sent as JSON (design.md 8.5).",
+          "type": "string",
+          "const": "wildcardMediaType"
+        },
+        {
+          "description": "A mapped type (`x-tsurara-type` and so on) has no entry for the language; the schema's type is used.",
+          "type": "string",
+          "const": "unmappedType"
+        },
+        {
+          "description": "A required property refers back to its own declaration, so its sample value stops at a fixed\ndepth with `{}` (design.md 18.7.1).",
+          "type": "string",
+          "const": "sampleCycle"
+        },
+        {
+          "description": "A string with `pattern` and no `example`: its sample value may not match (design.md 18.7.1).",
+          "type": "string",
+          "const": "samplePattern"
+        }
+      ]
+    },
+    "NameRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NameId"
+        },
+        "kind": {
+          "$ref": "#/$defs/NameKind"
+        },
+        "loc": {
+          "description": "Where the named thing is defined. Its JSON Pointer is the key of `naming.overrides`.",
+          "$ref": "#/$defs/Loc"
+        },
+        "inRoot": {
+          "description": "Whether `loc` is in the root document (only names there can be overridden).",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "loc",
+        "inRoot"
+      ]
+    },
+    "NameKind": {
+      "oneOf": [
+        {
+          "description": "A schema declaration. `preserve`: the preferred name comes from the definition (a components\nor `$defs` key) and is kept when it is a valid identifier.",
+          "type": "object",
+          "properties": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "preferred": {
+                  "type": "string"
+                },
+                "preserve": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "preferred",
+                "preserve"
+              ]
+            }
+          },
+          "required": [
+            "schema"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "The `Writable` variant of a schema (design.md 6.5).",
+          "type": "object",
+          "properties": {
+            "writable": {
+              "type": "object",
+              "properties": {
+                "of": {
+                  "$ref": "#/$defs/NameId"
+                }
+              },
+              "required": [
+                "of"
+              ]
+            }
+          },
+          "required": [
+            "writable"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "An operation in `paths`.",
+          "type": "object",
+          "properties": {
+            "operation": {
+              "type": "object",
+              "properties": {
+                "operation_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "method": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "method",
+                "path"
+              ]
+            }
+          },
+          "required": [
+            "operation"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "A webhook, by its name.",
+          "type": "object",
+          "properties": {
+            "webhook": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          },
+          "required": [
+            "webhook"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "An event channel of `x-event-channels`, by its name.",
+          "type": "object",
+          "properties": {
+            "channel": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          },
+          "required": [
+            "channel"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "An operation of a callback. Its name is derived from the operation that has the callback.",
+          "type": "object",
+          "properties": {
+            "callback": {
+              "type": "object",
+              "properties": {
+                "parent": {
+                  "$ref": "#/$defs/NameId"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "method": {
+                  "description": "The method, when the callback has several operations; empty otherwise.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "parent",
+                "label",
+                "method"
+              ]
+            }
+          },
+          "required": [
+            "callback"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

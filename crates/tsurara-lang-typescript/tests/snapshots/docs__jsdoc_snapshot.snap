@@ -1,0 +1,35 @@
+---
+source: crates/tsurara-lang-typescript/tests/docs.rs
+expression: out
+---
+/**
+ * Pet
+ *
+ * A pet. Never ends with *\/ in a comment.
+ * @deprecated
+ */
+export type Pet = {
+  /**
+   * Unique id
+   * @format int64
+   * @minimum 1
+   * @example 42
+   */
+  id: number;
+  /**
+   * @maxLength 64
+   * @pattern ^[a-z]+$
+   * @default "rex"
+   */
+  name?: string;
+  /**
+   * @minItems 1
+   * @uniqueItems true
+   */
+  tags?: string[];
+  /**
+   * @deprecated
+   * @example "sold"
+   */
+  status?: 'available' | 'sold';
+};

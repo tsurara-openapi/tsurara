@@ -1,0 +1,5 @@
+# Its own workspace, installed and tested on its own.
+packages: []
+# Versions released less than 5 days (7200 minutes) ago are not installed: time for a compromised
+# release to be found and pulled. Dependabot waits as long (.github/dependabot.yml).
+minimumReleaseAge: 7200

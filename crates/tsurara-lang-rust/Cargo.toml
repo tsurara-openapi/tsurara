@@ -1,0 +1,26 @@
+[package]
+name = "tsurara-lang-rust"
+description = "Rust backend of tsurara: serde types and async call functions for the tsurara-client runtime (experimental)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+tsurara-backend.workspace = true
+tsurara-runtimes.workspace = true
+tsurara-loader.workspace = true
+tsurara-lower.workspace = true
+tsurara-naming.workspace = true
+tsurara-sem.workspace = true
+tsurara-sample.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+jsonschema.workspace = true
+tsurara-testkit = { path = "../tsurara-testkit" }
+url.workspace = true
+
+[lints]
+workspace = true

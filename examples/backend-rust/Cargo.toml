@@ -1,0 +1,16 @@
+[package]
+name = "tsurara-backend-example"
+version = "0.0.0"
+edition = "2024"
+publish = false
+description = "An external tsurara backend that uses the published crates for lowering and naming"
+
+# Not part of the tsurara workspace: it depends on the crates as published.
+[workspace]
+
+[dependencies]
+serde_json = "1"
+tsurara-backend = "0.1"
+tsurara-lower = "0.1"
+tsurara-naming = "0.1"
+tsurara-sem = "0.1"

@@ -1,0 +1,84 @@
+# Text from the definition that would end a comment, a docstring or a template literal in generated
+# code: paths, a method, media types and channel names with `*/`, `"""`, backquotes,
+# backslashes and `${`, and descriptions with every line break of the target languages. If any of
+# them escaped, the rest of the text would be a syntax error, so every checker would fail.
+openapi: 3.2.0
+info: { title: hostile text, version: "1" }
+paths:
+  "/h*/ ) } x\"\"\" ) `\\` ${x} ]/{id}":
+    get:
+      operationId: getHostile
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Hostile" }
+    post:
+      operationId: postHostile
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Hostile" }
+          "text/x-a*/ ) } \"\"\" `\\`":
+            schema: { type: string }
+      responses:
+        "204": { description: done }
+    additionalOperations:
+      "PURGE*/":
+        operationId: purgeHostile
+        parameters:
+          - { name: id, in: path, required: true, schema: { type: string } }
+        responses:
+          "204": { description: done }
+  "/split/a{id}b*/ \"\"\" `\\` ${x}":
+    get:
+      operationId: getSplit
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: done }
+  # Whole-segment parameters: the MSW matcher is a template literal.
+  "/w/*/ `\\`/{id}":
+    get:
+      operationId: getWhole
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: done }
+x-event-channels:
+  "hostile*/ ) } \"\"\" `\\`":
+    channel: "h*/ ) } \"\"\" `\\` ${x}/{id}"
+    parameters:
+      id: { type: string }
+      x: { type: string }
+    content:
+      application/json:
+        schema: { $ref: "#/components/schemas/Hostile" }
+  # `{}` is text, not a variable; after `$` it must not start a substitution.
+  "empty ${}":
+    channel: "e/${}/{id}"
+    parameters:
+      id: { type: string }
+    content:
+      text/plain:
+        schema: { type: string }
+components:
+  schemas:
+    Hostile:
+      description: "carriage return\r    x: int = )(\rnext line separator\u2028 = )( \u2029 paragraph\u0085nel\u000bvt\u000cff */ ) }"
+      type: object
+      required: [a]
+      properties:
+        a:
+          description: "line\rb: int = )( \r\n*/ ) } \"\"\" ) \u2028 = )("
+          type: string
+    # gofmt reads a one-line comment that starts with `#` as a heading and collapses its spaces.
+    Heading:
+      description: "#\t \\"
+      type: string

@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Report",
+  "description": "Any report of the command.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/GenerateReport"
+    },
+    {
+      "$ref": "#/$defs/CheckReport"
+    }
+  ],
+  "$defs": {
+    "GenerateReport": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "description": "Always `generate`.",
+          "type": "string"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GeneratedTarget"
+          }
+        },
+        "error": {
+          "description": "Set when the command failed; the targets before the failure are listed.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "targets"
+      ]
+    },
+    "GeneratedTarget": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "language": {
+          "description": "`typescript`, `python`, `rust`, `go` or `external`.",
+          "type": "string"
+        },
+        "output": {
+          "description": "The output directory.",
+          "type": "string"
+        },
+        "written": {
+          "description": "Paths relative to the output directory.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unchanged": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deleted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WarningReport"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "language",
+        "output",
+        "written",
+        "unchanged",
+        "deleted",
+        "warnings"
+      ]
+    },
+    "WarningReport": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "`unresolved-ref`, ... (`tsurara inspect warning <code>` explains it).",
+          "type": "string"
+        },
+        "document": {
+          "description": "The document, as a path relative to the current directory or a URL.",
+          "type": "string"
+        },
+        "pointer": {
+          "description": "JSON Pointer in the document.",
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "language": {
+          "description": "The backend that reported it, for approximations of one language.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "document",
+        "pointer",
+        "message"
+      ]
+    },
+    "CheckReport": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "description": "Always `check`.",
+          "type": "string"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CheckedTarget"
+          }
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "targets"
+      ]
+    },
+    "CheckedTarget": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "upToDate": {
+          "description": "Whether the files on disk match and the runtime satisfies the generated code.",
+          "type": "boolean"
+        },
+        "differences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DifferenceReport"
+          }
+        },
+        "runtime": {
+          "description": "Problems with the installed runtime library, and notes when it could not be checked.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "output",
+        "upToDate",
+        "differences",
+        "runtime"
+      ]
+    },
+    "DifferenceReport": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "description": "`changed`, `missing` or `stale`.",
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "path"
+      ]
+    }
+  }
+}

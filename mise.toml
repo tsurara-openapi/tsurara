@@ -1,0 +1,10 @@
+[tools]
+node = "26.13.0"
+rust = "1.99.1"
+pnpm = "12.18.0"
+# The minimum Python version of generated code (design.md 18.16, Q2).
+python = "3.11.14"
+# Python packaging for runtimes/python.
+uv = "0.9.26"
+# The Go backend's checker and runtimes/go (generated code needs Go 1.24 or later).
+go = "1.27.3"

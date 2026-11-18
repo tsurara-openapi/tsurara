@@ -1,0 +1,6 @@
+---
+source: crates/tsurara-lang-typescript/tests/generate.rs
+expression: "warnings.join(\"\\n\")"
+---
+[renamed] https://example.com/kitchen-sink.yaml#/components/schemas/Error: `Error` is a reserved or global name; the type is named `ErrorModel`
+[wildcard-media-type] https://example.com/kitchen-sink.yaml#/paths/~1exports~1{exportId}/get/responses/200/content/*~1*: `*/*` with a schema that is not binary; the body is parsed by its actual Content-Type (`auto`). Set `wildcardAsJson` if the API only uses JSON

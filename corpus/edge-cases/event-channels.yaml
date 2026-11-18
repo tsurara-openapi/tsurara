@@ -1,0 +1,51 @@
+# Event channels (`x-event-channels`): a union payload, several parameters, a parameter
+# name that is not an identifier, a template with characters that need escaping in a template
+# literal, a text payload and a channel without a payload. Every backend must accept them; the
+# TypeScript backend generates a decoder per channel.
+openapi: 3.1.0
+info: { title: event channels, version: "1" }
+paths: {}
+x-event-channels:
+  board:
+    summary: Updates every participant of a board may see
+    channel: "board/{boardId}"
+    parameters:
+      boardId: { type: string }
+    private: true
+    content:
+      application/json:
+        schema: { $ref: "#/components/schemas/BoardEvent" }
+  user-feed:
+    channel: "u/{user-id}/`feed`/${x}/{n}"
+    parameters:
+      user-id: { type: string }
+      n: { type: integer }
+    content:
+      text/plain:
+        schema: { type: string }
+  heartbeat:
+    channel: heartbeat
+components:
+  schemas:
+    BoardEvent:
+      oneOf:
+        - $ref: "#/components/schemas/CardAdded"
+        - $ref: "#/components/schemas/PhaseChanged"
+      discriminator:
+        propertyName: type
+        mapping:
+          card.added: "#/components/schemas/CardAdded"
+          phase.changed: "#/components/schemas/PhaseChanged"
+    CardAdded:
+      type: object
+      required: [type, seq]
+      properties:
+        type: { const: card.added }
+        seq: { type: integer }
+    PhaseChanged:
+      type: object
+      required: [type, seq, phase]
+      properties:
+        type: { const: phase.changed }
+        seq: { type: integer }
+        phase: { type: string }

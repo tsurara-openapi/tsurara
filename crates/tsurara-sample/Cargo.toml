@@ -1,0 +1,21 @@
+[package]
+name = "tsurara-sample"
+description = "Deterministic sample values from the tsurara model, for mocks in every language"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+tsurara-loader.workspace = true
+tsurara-sem.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+jsonschema.workspace = true
+tsurara-testkit = { path = "../tsurara-testkit" }
+
+[lints]
+workspace = true

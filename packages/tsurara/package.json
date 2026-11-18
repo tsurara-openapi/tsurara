@@ -1,0 +1,26 @@
+{
+  "name": "tsurara",
+  "version": "0.1.0",
+  "description": "Generate types and API call functions from OpenAPI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsurara-openapi/tsurara.git",
+    "directory": "packages/tsurara"
+  },
+  "type": "module",
+  "bin": {
+    "tsurara": "bin/tsurara.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "schema"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test 'test/**/*.test.js'"
+  }
+}

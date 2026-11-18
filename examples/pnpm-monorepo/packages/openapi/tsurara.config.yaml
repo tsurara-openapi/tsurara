@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../../../../schema/tsurara.config.schema.json
+input: openapi.yaml
+output: src/generated
+typescript:
+  # `.ts` imports, so that apps run by Node with type stripping and bundlers share the files.
+  importExtension: ts

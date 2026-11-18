@@ -1,0 +1,41 @@
+# Pagination for infinite queries (`x-tsurara-pagination`): a cursor in a header, a pointer
+# with escaped tokens and an array index, a page number with a first page and both directions, and a
+# required parameter. Backends without infinite queries must ignore the extension.
+openapi: 3.1.0
+info: { title: pagination, version: "1" }
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - { name: X-Page-Token, in: header, schema: { type: string } }
+      x-tsurara-pagination: { param: header.X-Page-Token, next: "/links/0/next~1token" }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, links]
+                properties:
+                  items: { type: array, items: { type: string } }
+                  links:
+                    type: array
+                    items: { type: object, properties: { next/token: { type: string } } }
+  /pages:
+    get:
+      operationId: listPages
+      parameters:
+        - { name: page, in: query, required: true, schema: { type: integer } }
+      x-tsurara-pagination: { param: query.page, initial: 1, next: /next, previous: /prev }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next: { type: [integer, "null"] }
+                  prev: { type: [integer, "null"] }

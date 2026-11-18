@@ -1,0 +1,137 @@
+# 008 normalization.
+
+- name: allOf of inline objects becomes one object
+  schema:
+    allOf:
+      - { type: object, required: [a], properties: { a: { type: string } } }
+      - { type: object, properties: { b: { type: number } } }
+  expect: "{ a: string; b?: number }"
+
+- name: allOf with named types keeps at most one object literal
+  schemas:
+    Pet:
+      allOf:
+        - { $ref: "#/components/schemas/Base" }
+        - { type: object, properties: { a: { type: string } } }
+        - { $ref: "#/components/schemas/Mixin" }
+        - { type: object, properties: { b: { type: number } } }
+    Base: { type: object, properties: { id: { type: integer } } }
+    Mixin: { type: object, properties: { m: { type: boolean } } }
+  expect:
+    Pet: "Base & Mixin & { a?: string; b?: number }"
+
+- name: the order of allOf members does not change the output
+  schemas:
+    One:
+      allOf:
+        - { type: object, properties: { b: { type: number } } }
+        - { $ref: "#/components/schemas/Mixin" }
+        - { type: object, properties: { a: { type: string } } }
+        - { $ref: "#/components/schemas/Base" }
+    Two:
+      allOf:
+        - { $ref: "#/components/schemas/Base" }
+        - { type: object, properties: { a: { type: string } } }
+        - { $ref: "#/components/schemas/Mixin" }
+        - { type: object, properties: { b: { type: number } } }
+    Base: { type: object }
+    Mixin: { type: object }
+  expect:
+    One: "Base & Mixin & { a?: string; b?: number }"
+    Two: "Base & Mixin & { a?: string; b?: number }"
+
+- name: the order of required does not change the output
+  schemas:
+    One:
+      { type: object, required: [a, b], properties: { a: { type: string }, b: { type: number } } }
+    Two:
+      { type: object, required: [b, a], properties: { a: { type: string }, b: { type: number } } }
+  expect:
+    One: "{ a: string; b: number }"
+    Two: "{ a: string; b: number }"
+
+- name: the same property with different object types is merged
+  schema:
+    allOf:
+      - { type: object, properties: { a: { type: object, properties: { x: { type: string } } } } }
+      - { type: object, properties: { a: { type: object, properties: { y: { type: string } } } } }
+  expect: "{ a?: { x?: string; y?: string } }"
+
+- name: the same property with different types becomes an intersection
+  schemas:
+    T:
+      allOf:
+        - { type: object, properties: { a: { $ref: "#/components/schemas/X" } } }
+        - { type: object, properties: { a: { $ref: "#/components/schemas/Y" } } }
+    X: { type: object }
+    Y: { type: object }
+  expect:
+    T: "{ a?: X & Y }"
+
+- name: the same property with the same type is merged
+  schema:
+    allOf:
+      - { type: object, properties: { a: { type: string } } }
+      - { type: object, required: [a], properties: { a: { type: string } } }
+  expect: "{ a: string }"
+
+- name: required in another allOf member
+  schemas:
+    A:
+      allOf:
+        - { $ref: "#/components/schemas/Base" }
+        - { required: [id, name], properties: { name: { type: string } } }
+    Base: { type: object, properties: { id: { type: integer } } }
+  expect:
+    A: "Base & { id: number; name: string }"
+
+- name: unions are flattened and deduplicated
+  schema:
+    oneOf:
+      - { type: string }
+      - { anyOf: [{ type: string }, { type: number }] }
+      - { type: number }
+  expect: string | number
+
+- name: unknown absorbs unions
+  schema:
+    oneOf: [{ type: string }, {}]
+  expect: unknown
+
+- name: never is removed from unions
+  schema:
+    oneOf: [{ type: string }, false]
+  expect: string
+
+- name: nullable in 3.0
+  openapi: 3.0.3
+  schema: { type: string, nullable: true }
+  expect: string | null
+
+- name: type null in 3.1
+  schema: { type: [string, "null"] }
+  expect: string | null
+
+- name: oneOf with type null
+  schema:
+    oneOf: [{ type: "null" }, { type: string }]
+  expect: string | null
+
+- name: the three ways to write nullable give the same output for refs
+  openapi: 3.1.0
+  schemas:
+    A: { oneOf: [{ $ref: "#/components/schemas/P" }, { type: "null" }] }
+    B: { anyOf: [{ type: "null" }, { $ref: "#/components/schemas/P" }] }
+    C: { allOf: [{ $ref: "#/components/schemas/P" }], type: [object, "null"] }
+    P: { type: object, properties: { a: { type: string } } }
+  expect:
+    A: P | null
+    B: P | null
+
+- name: nullable allOf in 3.0
+  openapi: 3.0.3
+  schemas:
+    A: { allOf: [{ $ref: "#/components/schemas/P" }], nullable: true }
+    P: { type: object, properties: { a: { type: string } } }
+  expect:
+    A: P | null

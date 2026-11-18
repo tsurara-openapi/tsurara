@@ -1,0 +1,29 @@
+# Constraints in the Zod schemas (`typescript.validatorConstraints`): every keyword, with
+# formats that have their own Zod schema, nullable values, constraints next to `$ref` (3.1), nested
+# arrays, and a pattern JavaScript cannot compile (a warning, left out). Backends without validators
+# keep them in docs only.
+openapi: 3.1.0
+info: { title: constraints, version: "1" }
+paths: {}
+components:
+  schemas:
+    Everything:
+      type: object
+      minProperties: 1
+      maxProperties: 20
+      properties:
+        id: { type: string, format: uuid, maxLength: 36 }
+        when: { type: string, format: date-time, minLength: 20 }
+        link: { type: string, format: uri, maxLength: 2000 }
+        code: { type: string, pattern: "^[A-Z]{2}-\\d{3}$" }
+        perl: { type: string, pattern: "(?i)abc" }
+        count: { type: integer, format: int64, minimum: 1, maximum: 9007199254740991 }
+        ratio: { type: number, exclusiveMinimum: 0, exclusiveMaximum: 1, multipleOf: 0.01 }
+        tags:
+          { type: array, items: { type: string, maxLength: 10 }, uniqueItems: true, maxItems: 5 }
+        grid:
+          { type: array, items: { type: array, items: { type: integer, minimum: 0 }, minItems: 1 } }
+        note: { type: [string, "null"], minLength: 1 }
+        either: { oneOf: [{ type: string }, { type: integer }], minLength: 2, minimum: 2 }
+        name: { $ref: "#/components/schemas/Name", maxLength: 5 }
+    Name: { type: string, minLength: 2 }

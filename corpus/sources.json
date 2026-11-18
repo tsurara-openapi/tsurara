@@ -1,0 +1,41 @@
+{
+  "$comment": "Real-world definitions for the corpus tests (design.md 13.1). Each source is pinned to a tag or commit and checked by sha256. `node scripts/fetch-corpus.mjs` downloads them into target/corpus.",
+  "sources": [
+    {
+      "name": "petstore-2.0-expanded",
+      "file": "petstore-2.0-expanded.json",
+      "url": "https://raw.githubusercontent.com/OAI/learn.openapis.org/5f26927b00d5d3d10c1a1a6bbe2d9b41b4a726e7/examples/v2.0/json/petstore-expanded.json",
+      "sha256": "5c44b147cc401deb074b0cd9f5cc3b638b07fcd5b17a76206d977eb898e7d375"
+    },
+    {
+      "name": "github-3.0",
+      "file": "github-3.0.json",
+      "url": "https://raw.githubusercontent.com/github/rest-api-description/0c509d76a202023f25855726f42efd1517cda0bc/descriptions/api.github.com/api.github.com.json",
+      "sha256": "806d4735354a732049599a70f059811f63cfde8521436d723a3f452c606e4859"
+    },
+    {
+      "name": "github-3.1",
+      "file": "github-3.1.json",
+      "url": "https://raw.githubusercontent.com/github/rest-api-description/0c509d76a202023f25855726f42efd1517cda0bc/descriptions-next/api.github.com/api.github.com.json",
+      "sha256": "9db2a149fd1686558966c00ceea41550630d867f2d2a0a016a2d8112d5e0c762"
+    },
+    {
+      "name": "stripe",
+      "file": "stripe.json",
+      "url": "https://raw.githubusercontent.com/stripe/openapi/v2599/openapi/spec3.json",
+      "sha256": "7cff4cc46d0654101a36a3302f7544640f5f73e4f3cad6f264f0e23c19fa1776"
+    },
+    {
+      "name": "kubernetes",
+      "file": "kubernetes.json",
+      "url": "https://raw.githubusercontent.com/kubernetes/kubernetes/v1.37.2/api/openapi-spec/swagger.json",
+      "sha256": "465276aedf437726de5a6ed23a41b86d78bb0d347edf251a755ae26a93cdd8a6"
+    },
+    {
+      "name": "openai",
+      "file": "openai.yaml",
+      "url": "https://raw.githubusercontent.com/openai/openai-openapi/c6522b4e0c48b88b95bb427e09268954d0213e31/openapi.yaml",
+      "sha256": "474789d5faa06f88242b49300f99f7afa06db12c1fcbe17642e69e6e0f72859c"
+    }
+  ]
+}
