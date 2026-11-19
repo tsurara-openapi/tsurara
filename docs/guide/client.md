@@ -41,6 +41,8 @@ When `network`, `timeout` or `aborted` ended the reading of the body, the Result
 
 Text bodies (`text/*` and the like) are decoded with the `charset` of their Content-Type, UTF-8 without one; a charset the platform's `TextDecoder` does not know is a `parse` failure. A text media type whose schema is binary (`type: string, format: binary`) is read as a `Blob` instead, with its bytes as they arrive.
 
+An error response the definition gives no content has `error: undefined`, and its body is discarded. With `typescript.bodilessResponses: read`, a body that arrives with a Content-Type is read anyway (as JSON, text or a `Blob`, by that type) and `error` is `unknown`, so that a message the definition forgot is not lost.
+
 Checking only `r.status === 404` does not narrow `r.error`, because the member for undocumented statuses has `status: number`; `isHttpError` also checks `documented`.
 
 Where exceptions are easier, `unwrap(r)` returns `data` or throws `ApiError` (with `kind`, `status`, `operationId` and the `result`). `ApiError<GetPetResult>` types `result` by the operation, for example as `TError` in TanStack Query.
@@ -297,12 +299,12 @@ await getPet(api, {
 
 ## The raw response
 
-`api.requestRaw(def, data)` sends a call as the generated function would (with the client's headers, auth and middleware), but returns the response with its body unread, to stream it on (a CSV or ZIP export) or to read it in a way the definition does not say. The generated `{operation}Def` describes the operation:
+`api.requestRaw(def, data)` sends a call as the generated function would (with the client's headers, auth and middleware), but returns the response with its body unread, to stream it on (a large download) or to read it in a way the definition does not say. The generated `{operation}Def` describes the operation:
 
 ```ts
-import { exportReportDef, type ExportReportData } from './api/operations/exportReport.js';
+import { exportOrdersDef, type ExportOrdersData } from './api/operations/exportOrders.js';
 
-const r = await api.requestRaw(exportReportDef, { query: { month: '2026-11' } } satisfies ExportReportData);
+const r = await api.requestRaw(exportOrdersDef, { query: { status: 'shipped' } } satisfies ExportOrdersData);
 if (r.kind === 'response' && r.ok) return new Response(r.response.body, { headers: r.response.headers });
 ```
 

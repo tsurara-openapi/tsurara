@@ -3,8 +3,8 @@ import { describe, test } from 'node:test';
 import { type AnyResult, createClient, type OperationDef } from '../src/index.ts';
 import { getPetDef, json, mockFetch } from './helpers.ts';
 
-/** `名前,値\n` in Shift_JIS. */
-const SHIFT_JIS = new Uint8Array([150, 188, 145, 79, 44, 146, 108, 10]);
+/** `café\n` in ISO-8859-1. */
+const LATIN1 = new Uint8Array([99, 97, 102, 233, 10]);
 
 const csvDef = {
   v: 1,
@@ -21,34 +21,34 @@ describe('text bodies', () => {
   test('are decoded with the charset of the Content-Type', async () => {
     const api = createClient({
       baseUrl: 'https://x.test',
-      fetch: answer(SHIFT_JIS, { headers: { 'content-type': 'text/csv; charset=Shift_JIS' } }),
+      fetch: answer(LATIN1, { headers: { 'content-type': 'text/csv; charset=ISO-8859-1' } }),
     });
     const r = await api.request<AnyResult>(csvDef);
     assert.ok(r.ok);
-    assert.equal(r.data, '名前,値\n');
+    assert.equal(r.data, 'café\n');
   });
 
   test('of undocumented statuses are decoded with their charset too', async () => {
     const api = createClient({
       baseUrl: 'https://x.test',
-      fetch: answer(SHIFT_JIS, {
+      fetch: answer(LATIN1, {
         status: 500,
-        headers: { 'content-type': 'text/plain; charset="shift_jis"' },
+        headers: { 'content-type': 'text/plain; charset="iso-8859-1"' },
       }),
     });
     const r = await api.request<AnyResult>(csvDef);
     assert.ok(r.kind === 'http');
-    assert.equal(r.error, '名前,値\n');
+    assert.equal(r.error, 'café\n');
   });
 
   test('are UTF-8 without a charset', async () => {
     const api = createClient({
       baseUrl: 'https://x.test',
-      fetch: answer('名前', { headers: { 'content-type': 'text/csv' } }),
+      fetch: answer('café', { headers: { 'content-type': 'text/csv' } }),
     });
     const r = await api.request<AnyResult>(csvDef);
     assert.ok(r.ok);
-    assert.equal(r.data, '名前');
+    assert.equal(r.data, 'café');
   });
 
   test('with a charset the platform cannot decode are a parse failure', async () => {
@@ -65,7 +65,7 @@ describe('text bodies', () => {
 describe('requestRaw', () => {
   test('returns the response with its body unread, after middleware and auth', async () => {
     const m = mockFetch(
-      () => new Response(SHIFT_JIS, { headers: { 'content-type': 'text/csv; charset=Shift_JIS' } }),
+      () => new Response(LATIN1, { headers: { 'content-type': 'text/csv; charset=ISO-8859-1' } }),
     );
     const seen: string[] = [];
     const api = createClient({
@@ -83,7 +83,7 @@ describe('requestRaw', () => {
     assert.equal(r.ok, true);
     assert.equal(r.status, 200);
     assert.equal(r.response.bodyUsed, false);
-    assert.deepEqual(new Uint8Array(await r.response.arrayBuffer()), SHIFT_JIS);
+    assert.deepEqual(new Uint8Array(await r.response.arrayBuffer()), LATIN1);
     assert.deepEqual(seen, ['exportCsv']);
     assert.equal(new Headers(m.calls[0]?.init.headers).get('x-a'), '1');
   });
@@ -213,5 +213,49 @@ describe('fetchOptions', () => {
     });
     await api.request(getPetDef, { path: { petId: 1 }, fetchOptions: { cache: 'no-store' } });
     assert.equal(m.calls[0]?.init.priority, 'high');
+  });
+});
+
+describe('readWithContentType', () => {
+  const def = {
+    v: 1,
+    id: 'createOrder',
+    method: 'POST',
+    path: '/orders',
+    responses: {
+      201: { parseAs: 'none' },
+      400: { parseAs: 'none', readWithContentType: true },
+    },
+  } as const satisfies OperationDef;
+  const call = (body: BodyInit, headers: Record<string, string>) =>
+    createClient({
+      baseUrl: 'https://x.test',
+      fetch: answer(body, { status: 400, headers }),
+    }).request<AnyResult>(def);
+
+  test('reads a body without content in the definition by its Content-Type', async () => {
+    const r = await call('{"message":"out of stock"}', { 'content-type': 'application/json' });
+    assert.ok(r.kind === 'http' && r.documented);
+    assert.deepEqual(r.error, { message: 'out of stock' });
+    const text = await call('out of stock', { 'content-type': 'text/plain; charset=utf-8' });
+    assert.ok(text.kind === 'http');
+    assert.equal(text.error, 'out of stock');
+  });
+
+  test('leaves a body without a Content-Type unread', async () => {
+    // Bytes: a string body would get `text/plain` from the Response constructor.
+    const r = await call(new TextEncoder().encode('ignored'), {});
+    assert.ok(r.kind === 'http');
+    assert.equal(r.error, undefined);
+  });
+
+  test('is not needed where the definition has no flag', async () => {
+    const api = createClient({
+      baseUrl: 'https://x.test',
+      fetch: answer('{"a":1}', { status: 201, headers: { 'content-type': 'application/json' } }),
+    });
+    const r = await api.request<AnyResult>(def);
+    assert.ok(r.ok);
+    assert.equal(r.data, undefined);
   });
 });

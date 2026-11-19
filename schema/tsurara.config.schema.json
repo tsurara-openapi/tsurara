@@ -634,6 +634,17 @@
             }
           ]
         },
+        "bodilessResponses": {
+          "description": "What happens to the body of an error response the definition gives no content (default\n`discard`; `read` reads a body that arrives with a Content-Type, as `unknown`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BodilessResponsesConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "validators": {
           "description": "Emit schemas for response validation under `zod/` (default: none). Only `zod` (Zod 4).",
           "anyOf": [
@@ -752,6 +763,13 @@
       "enum": [
         "union",
         "const"
+      ]
+    },
+    "BodilessResponsesConfig": {
+      "type": "string",
+      "enum": [
+        "discard",
+        "read"
       ]
     },
     "ValidatorsConfig": {
@@ -890,6 +908,24 @@
               "type": "null"
             }
           ]
+        },
+        "typePrefix": {
+          "description": "Put before the names of schema types (`Api` gives `ApiPet`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enumKeyCase": {
+          "description": "How the keys of `enumStyle: const` objects are written (default `preserve`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EnumKeyCaseConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -905,6 +941,15 @@
       "type": "string",
       "enum": [
         "preserve",
+        "camel"
+      ]
+    },
+    "EnumKeyCaseConfig": {
+      "type": "string",
+      "enum": [
+        "preserve",
+        "constant",
+        "pascal",
         "camel"
       ]
     },

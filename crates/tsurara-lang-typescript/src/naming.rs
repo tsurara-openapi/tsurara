@@ -276,6 +276,7 @@ pub fn assign(model: &Model, common: &Options, ts: &TypeScriptOptions) -> (Assig
                         None => (raw.clone(), *preserve),
                     };
                     let ident = policy.convert(Context::Type, &raw, preserve);
+                    let ident = format!("{}{ident}", ts.type_prefix);
                     let c = names.claim(&policy, Context::Type, "schemas", &ident, &pointer);
                     renamed(c.changed, "type", &c.name);
                     (c.name, false)

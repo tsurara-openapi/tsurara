@@ -420,3 +420,61 @@ paths:
         ["createPet", "listPets", "updatePet"]
     );
 }
+
+#[test]
+fn schema_types_can_have_a_prefix() {
+    let doc = set(r##"
+openapi: 3.1.0
+info: { title: t, version: "1" }
+paths:
+  /pets/{id}:
+    get:
+      operationId: getPet
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/Pet" } }
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id: { type: string, readOnly: true }
+        status: { $ref: "#/components/schemas/pet-status" }
+    pet-status: { type: string, enum: [a, b] }
+    Fixed: { type: string }
+"##);
+    let ts = TypeScriptOptions {
+        type_prefix: "Api".into(),
+        name_overrides: [("#/components/schemas/Fixed".to_owned(), "Fixed".to_owned())].into(),
+        ..TypeScriptOptions::default()
+    };
+    let out = generate(&doc, &Options::default(), &ts).unwrap();
+    let mut paths: Vec<&str> = out.files.iter().map(|f| f.path.as_str()).collect();
+    paths.sort();
+    for path in [
+        "schemas/ApiPet.ts",
+        "schemas/ApiPetStatus.ts",
+        "schemas/Fixed.ts",
+        "operations/getPet.ts",
+    ] {
+        assert!(paths.contains(&path), "{path} in {paths:?}");
+    }
+    let pet = &out
+        .files
+        .iter()
+        .find(|f| f.path == "schemas/ApiPet.ts")
+        .unwrap()
+        .contents;
+    assert!(pet.contains("export type ApiPetWritable = {"), "{pet}");
+    let op = &out
+        .files
+        .iter()
+        .find(|f| f.path == "operations/getPet.ts")
+        .unwrap()
+        .contents;
+    assert!(op.contains("export type GetPetResult ="), "{op}");
+    assert!(op.contains("data: ApiPet;"), "{op}");
+}

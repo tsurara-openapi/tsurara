@@ -8,15 +8,16 @@ mod paths;
 pub mod raw;
 
 use raw::{
-    EnumStyleConfig, FunctionCaseConfig, ImportExtensionConfig, InputConfig, LayoutConfig,
-    NameCaseConfig, RuntimeConfig, TargetConfig, TypeConfig, ValidatorsConfig,
+    BodilessResponsesConfig, EnumKeyCaseConfig, EnumStyleConfig, FunctionCaseConfig,
+    ImportExtensionConfig, InputConfig, LayoutConfig, NameCaseConfig, RuntimeConfig, TargetConfig,
+    TypeConfig, ValidatorsConfig,
 };
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use tsurara_lang_typescript::TypeScriptOptions;
 use tsurara_lang_typescript::options::{
-    EnumStyle, FunctionCase, ImportExtension, Layout, NameCase,
+    BodilessResponses, EnumKeyCase, EnumStyle, FunctionCase, ImportExtension, Layout, NameCase,
 };
 use tsurara_sem::ir::{External, Import};
 use tsurara_sem::options::{Filter, Options, RuntimeSource};
@@ -657,6 +658,23 @@ fn build_target(
                 NameCaseConfig::Pascal => NameCase::Pascal,
             };
         }
+        if let Some(prefix) = naming.type_prefix {
+            if !prefix.is_empty() && !is_identifier_start(&prefix) {
+                return Err(invalid(
+                    path,
+                    format!("typescript.naming.typePrefix `{prefix}` does not start an identifier"),
+                ));
+            }
+            ts.type_prefix = prefix;
+        }
+        if let Some(case) = naming.enum_key_case {
+            ts.enum_key_case = match case {
+                EnumKeyCaseConfig::Preserve => EnumKeyCase::Preserve,
+                EnumKeyCaseConfig::Constant => EnumKeyCase::Constant,
+                EnumKeyCaseConfig::Pascal => EnumKeyCase::Pascal,
+                EnumKeyCaseConfig::Camel => EnumKeyCase::Camel,
+            };
+        }
         if let Some(case) = naming.function_case {
             ts.function_name_case = match case {
                 FunctionCaseConfig::Preserve => FunctionCase::Preserve,
@@ -699,6 +717,12 @@ fn build_target(
             ImportExtensionConfig::Js => ImportExtension::Js,
             ImportExtensionConfig::Ts => ImportExtension::Ts,
             ImportExtensionConfig::None => ImportExtension::None,
+        };
+    }
+    if let Some(b) = tsc.bodiless_responses {
+        ts.bodiless_responses = match b {
+            BodilessResponsesConfig::Discard => BodilessResponses::Discard,
+            BodilessResponsesConfig::Read => BodilessResponses::Read,
         };
     }
     if let Some(style) = tsc.enum_style {
@@ -957,6 +981,16 @@ fn is_var_name(s: &str) -> bool {
         .next()
         .is_some_and(|c| c == '_' || c.is_ascii_alphabetic())
         && chars.all(|c| c == '_' || c.is_ascii_alphanumeric())
+}
+
+/// Whether a type name can start with `s`: an identifier of ASCII letters, digits, `_` and `$`
+/// that does not start with a digit.
+fn is_identifier_start(s: &str) -> bool {
+    let mut chars = s.chars();
+    chars
+        .next()
+        .is_some_and(|c| c == '_' || c == '$' || c.is_ascii_alphabetic())
+        && chars.all(|c| c == '_' || c == '$' || c.is_ascii_alphanumeric())
 }
 
 fn invalid(path: &Path, message: impl Into<String>) -> Error {

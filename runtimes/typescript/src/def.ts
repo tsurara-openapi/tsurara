@@ -74,6 +74,11 @@ export type ResponseDef = {
    * event. The data of other events stays a string.
    */
   readonly jsonEvents?: true | readonly string[];
+  /**
+   * With `none`: a body that arrives with a Content-Type is read anyway, as `auto` reads it, for a
+   * response the definition gives no content.
+   */
+  readonly readWithContentType?: boolean;
   /** TypeDefs of the body per media type, for runtimes of other languages. Ignored here. */
   readonly types?: { readonly [mediaType: string]: unknown };
 };

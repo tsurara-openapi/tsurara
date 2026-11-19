@@ -624,3 +624,31 @@ fn function_case_is_read() {
         tsurara_lang_typescript::options::FunctionCase::Camel
     );
 }
+
+#[test]
+fn type_prefix_enum_key_case_and_bodiless_responses_are_read() {
+    use tsurara_lang_typescript::options::{BodilessResponses, EnumKeyCase};
+    let (_tmp, root) = tempdir();
+    let config = write(
+        &root,
+        "tsurara.config.yaml",
+        "input: openapi.yaml\noutput: out\ntypescript:\n  bodilessResponses: read\n  naming:\n    typePrefix: Api\n    enumKeyCase: constant\n",
+    );
+    let config = load_with_env(&config, &no_env).unwrap();
+    let ts = ts(&config.targets[0]);
+    assert_eq!(ts.type_prefix, "Api");
+    assert_eq!(ts.enum_key_case, EnumKeyCase::Constant);
+    assert_eq!(ts.bodiless_responses, BodilessResponses::Read);
+}
+
+#[test]
+fn a_type_prefix_must_start_an_identifier() {
+    let (_tmp, root) = tempdir();
+    let config = write(
+        &root,
+        "tsurara.config.yaml",
+        "input: openapi.yaml\noutput: out\ntypescript:\n  naming:\n    typePrefix: 1-a\n",
+    );
+    let err = load_with_env(&config, &no_env).unwrap_err().to_string();
+    assert!(err.contains("typePrefix"), "{err}");
+}

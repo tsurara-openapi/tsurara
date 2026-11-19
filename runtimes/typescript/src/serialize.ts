@@ -233,7 +233,7 @@ const appendPart = (form: FormData, name: string, value: unknown, enc: EncodingD
     form.append(name, new Blob([JSON.stringify(value)], { type: enc.contentType }));
   } else if (isObject(value)) {
     // A part with a Content-Type would have to be a Blob, which FormData sends as a file (with a
-    // file name); servers such as PHP then take it for an upload. Without an `encoding` that asks
+    // file name); many servers then take it for an uploaded file. Without an `encoding` that asks
     // for a media type, an object is sent as a field with its JSON text.
     form.append(name, JSON.stringify(value));
   } else if (enc?.contentType && /json/i.test(enc.contentType)) {
