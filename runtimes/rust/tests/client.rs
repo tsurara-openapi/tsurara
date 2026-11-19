@@ -394,12 +394,12 @@ async fn text_bodies_are_decoded_with_their_charset() {
         headers: vec![("content-type".into(), content_type.into())],
         body: body.to_vec(),
     };
-    // `名前,値` in Shift_JIS.
-    let shift_jis = [150, 188, 145, 79, 44, 146, 108];
+    // `café` in ISO-8859-1.
+    let latin1 = [99, 97, 102, 233];
     for (content_type, body) in [
-        ("text/csv; charset=Shift_JIS", &shift_jis[..]),
-        ("text/csv; charset=\"shift_jis\"", &shift_jis[..]),
-        ("text/csv", "名前,値".as_bytes()),
+        ("text/csv; charset=ISO-8859-1", &latin1[..]),
+        ("text/csv; charset=\"iso-8859-1\"", &latin1[..]),
+        ("text/csv", "café".as_bytes()),
     ] {
         let (t, _) = script(vec![text(content_type, body)]);
         let client = Client::builder("https://x").transport(t).build();
@@ -407,7 +407,7 @@ async fn text_bodies_are_decoded_with_their_charset() {
             .request::<String, String>(&def, Input::default())
             .await
             .unwrap();
-        assert_eq!(ok.data, "名前,値", "{content_type}");
+        assert_eq!(ok.data, "café", "{content_type}");
     }
     let (t, _) = script(vec![text("text/csv; charset=x-no-such-charset", b"x")]);
     let client = Client::builder("https://x").transport(t).build();

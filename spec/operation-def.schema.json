@@ -181,6 +181,10 @@
           "description": "With events: the names of the events whose data is parsed as JSON, or true for every event. The data of other events stays a string.",
           "oneOf": [{ "const": true }, { "type": "array", "items": { "type": "string" } }]
         },
+        "readWithContentType": {
+          "type": "boolean",
+          "description": "With none: a body that arrives with a Content-Type is read anyway, as auto reads it. For responses the definition gives no content; a runtime that does not support it discards the body."
+        },
         "types": {
           "type": "object",
           "description": "TypeDef of the body per media type, for runtimes that convert with TypeDefs.",

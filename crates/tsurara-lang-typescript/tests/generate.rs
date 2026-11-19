@@ -4,7 +4,7 @@ use std::path::Path;
 use tsurara_backend::OutputFile;
 use tsurara_lang_typescript::TypeScriptOptions;
 use tsurara_lang_typescript::generate;
-use tsurara_lang_typescript::options::{EnumStyle, Layout};
+use tsurara_lang_typescript::options::{EnumKeyCase, EnumStyle, Layout};
 use tsurara_loader::{DocumentSet, Fetcher, MemoryFetcher, normalize_swagger2, parse_document};
 use tsurara_sem::Options;
 use tsurara_testkit::{TsOptions, assert_tsc_passes};
@@ -258,5 +258,74 @@ components:
     assert!(
         size.contains("export const Size = {\n  Small: 1,\n  Large: 2,\n} as const;"),
         "{size}"
+    );
+}
+
+#[test]
+fn const_enum_keys_can_change_case() {
+    let doc = parse_document(
+        br#"
+openapi: 3.1.0
+info: { title: t, version: "1" }
+paths: {}
+components:
+  schemas:
+    OrderStatus: { type: string, enum: [payment_pending, "in-stock", 1st] }
+    Named: { type: string, enum: [x, y], x-enum-varnames: [PaymentPending, fullRefund] }
+    Clash: { type: string, enum: [a-b, a_b] }
+"#,
+    )
+    .unwrap();
+    let set = DocumentSet::from_value(doc);
+    let file = |case: EnumKeyCase, path: &str| {
+        let out = generate(
+            &set,
+            &Options::default(),
+            &TypeScriptOptions {
+                enum_style: EnumStyle::Const,
+                enum_key_case: case,
+                ..TypeScriptOptions::default()
+            },
+        )
+        .unwrap();
+        out.files
+            .iter()
+            .find(|f| f.path == path)
+            .unwrap()
+            .contents
+            .clone()
+    };
+    let status = file(EnumKeyCase::Constant, "schemas/OrderStatus.ts");
+    assert!(
+        status.contains(
+            "  PAYMENT_PENDING: 'payment_pending',\n  IN_STOCK: 'in-stock',\n  '1ST': '1st',\n"
+        ),
+        "{status}"
+    );
+    let named = file(EnumKeyCase::Constant, "schemas/Named.ts");
+    assert!(
+        named.contains("  PAYMENT_PENDING: 'x',\n  FULL_REFUND: 'y',\n"),
+        "{named}"
+    );
+    let pascal = file(EnumKeyCase::Pascal, "schemas/OrderStatus.ts");
+    assert!(
+        pascal.contains("  PaymentPending: 'payment_pending',\n  InStock: 'in-stock',\n"),
+        "{pascal}"
+    );
+    let camel = file(EnumKeyCase::Camel, "schemas/Named.ts");
+    assert!(
+        camel.contains("  paymentPending: 'x',\n  fullRefund: 'y',\n"),
+        "{camel}"
+    );
+    // Keys that become the same are numbered.
+    let clash = file(EnumKeyCase::Constant, "schemas/Clash.ts");
+    assert!(
+        clash.contains("  A_B: 'a-b',\n  A_B_2: 'a_b',\n"),
+        "{clash}"
+    );
+    let preserve = file(EnumKeyCase::Preserve, "schemas/OrderStatus.ts");
+    assert!(
+        preserve.contains("  payment_pending: 'payment_pending',\n"),
+        "{preserve}"
     );
 }

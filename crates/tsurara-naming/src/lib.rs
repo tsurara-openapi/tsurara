@@ -242,6 +242,15 @@ pub fn camel_case(name: &str) -> String {
     lower_first(&pascal_case(name))
 }
 
+/// `PAYMENT_PENDING`: the words in upper case, joined with `_`.
+pub fn constant_case(name: &str) -> String {
+    words(name)
+        .iter()
+        .map(|w| w.to_uppercase())
+        .collect::<Vec<_>>()
+        .join("_")
+}
+
 /// Prefixes names starting with a digit with `_`. Uses `fallback` if the name is empty.
 fn ensure_start(name: String, fallback: &str) -> String {
     if name.is_empty() {

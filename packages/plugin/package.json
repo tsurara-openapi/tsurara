@@ -1,6 +1,6 @@
 {
   "name": "@tsurara/plugin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Write tsurara plugins in TypeScript",
   "license": "MIT",
   "repository": {

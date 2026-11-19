@@ -5,9 +5,9 @@
 openapi: 3.1.0
 info: { title: enum member names, version: "1" }
 paths:
-  /report:
+  /orders/export:
     get:
-      operationId: getReport
+      operationId: exportOrders
       parameters:
         - { name: color, in: query, schema: { $ref: "#/components/schemas/Color" } }
       responses:

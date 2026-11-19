@@ -11,9 +11,9 @@ const DOC: &str = r##"
 openapi: 3.1.0
 info: { title: t, version: "1" }
 paths:
-  /report:
+  /orders/export:
     get:
-      operationId: getReport
+      operationId: exportOrders
       responses:
         "200":
           description: ok
@@ -55,9 +55,9 @@ fn file<'a>(files: &'a [(String, String)], path: &str) -> &'a str {
 #[test]
 fn a_binary_schema_makes_a_text_body_a_blob() {
     let files = files();
-    let report = file(&files, "gen/operations/getReport.ts");
-    assert!(report.contains("200: { parseAs: 'blob' }"), "{report}");
-    assert!(report.contains("data: Blob;"), "{report}");
+    let export = file(&files, "gen/operations/exportOrders.ts");
+    assert!(export.contains("200: { parseAs: 'blob' }"), "{export}");
+    assert!(export.contains("data: Blob;"), "{export}");
     let put = file(&files, "gen/operations/putNotes.ts");
     assert!(put.contains("body: Blob"), "{put}");
     let notes = file(&files, "gen/operations/getNotes.ts");

@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/*"]
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT"
@@ -12,20 +12,20 @@ repository = "https://github.com/tsurara-openapi/tsurara"
 [workspace.dependencies]
 proptest = { version = "1.12", default-features = false, features = ["std"] }
 jsonschema = "0.61.1"
-tsurara-loader = { path = "crates/tsurara-loader", version = "0.1.1" }
-tsurara-sem = { path = "crates/tsurara-sem", version = "0.1.1" }
-tsurara-naming = { path = "crates/tsurara-naming", version = "0.1.1" }
-tsurara-lower = { path = "crates/tsurara-lower", version = "0.1.1" }
-tsurara-sample = { path = "crates/tsurara-sample", version = "0.1.1" }
-tsurara-plugin = { path = "crates/tsurara-plugin", version = "0.1.1" }
-tsurara-pretty = { path = "crates/tsurara-pretty", version = "0.1.1" }
-tsurara-backend = { path = "crates/tsurara-backend", version = "0.1.1" }
-tsurara-lang-typescript = { path = "crates/tsurara-lang-typescript", version = "0.1.1" }
-tsurara-lang-python = { path = "crates/tsurara-lang-python", version = "0.1.1" }
-tsurara-lang-rust = { path = "crates/tsurara-lang-rust", version = "0.1.1" }
-tsurara-lang-go = { path = "crates/tsurara-lang-go", version = "0.1.1" }
-tsurara-config = { path = "crates/tsurara-config", version = "0.1.1" }
-tsurara-runtimes = { path = "crates/tsurara-runtimes", version = "0.1.1" }
+tsurara-loader = { path = "crates/tsurara-loader", version = "0.1.2" }
+tsurara-sem = { path = "crates/tsurara-sem", version = "0.1.2" }
+tsurara-naming = { path = "crates/tsurara-naming", version = "0.1.2" }
+tsurara-lower = { path = "crates/tsurara-lower", version = "0.1.2" }
+tsurara-sample = { path = "crates/tsurara-sample", version = "0.1.2" }
+tsurara-plugin = { path = "crates/tsurara-plugin", version = "0.1.2" }
+tsurara-pretty = { path = "crates/tsurara-pretty", version = "0.1.2" }
+tsurara-backend = { path = "crates/tsurara-backend", version = "0.1.2" }
+tsurara-lang-typescript = { path = "crates/tsurara-lang-typescript", version = "0.1.2" }
+tsurara-lang-python = { path = "crates/tsurara-lang-python", version = "0.1.2" }
+tsurara-lang-rust = { path = "crates/tsurara-lang-rust", version = "0.1.2" }
+tsurara-lang-go = { path = "crates/tsurara-lang-go", version = "0.1.2" }
+tsurara-config = { path = "crates/tsurara-config", version = "0.1.2" }
+tsurara-runtimes = { path = "crates/tsurara-runtimes", version = "0.1.2" }
 clap = { version = "4.6", features = ["derive"] }
 indexmap = "2.14"
 insta = "1.49"

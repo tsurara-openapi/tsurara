@@ -158,6 +158,9 @@ pub struct TypeScriptConfig {
     pub import_extension: Option<ImportExtensionConfig>,
     /// How string enums are emitted (default `union`).
     pub enum_style: Option<EnumStyleConfig>,
+    /// What happens to the body of an error response the definition gives no content (default
+    /// `discard`; `read` reads a body that arrives with a Content-Type, as `unknown`).
+    pub bodiless_responses: Option<BodilessResponsesConfig>,
     /// Emit schemas for response validation under `zod/` (default: none). Only `zod` (Zod 4).
     pub validators: Option<ValidatorsConfig>,
     /// Also check the definition's constraints (`minLength`, `maximum`, `pattern`, `minItems`, ...)
@@ -193,6 +196,10 @@ pub struct TypeScriptNamingConfig {
     pub schema_case: Option<NameCaseConfig>,
     /// How function names are made from operation ids (default `preserve`).
     pub function_case: Option<FunctionCaseConfig>,
+    /// Put before the names of schema types (`Api` gives `ApiPet`).
+    pub type_prefix: Option<String>,
+    /// How the keys of `enumStyle: const` objects are written (default `preserve`).
+    pub enum_key_case: Option<EnumKeyCaseConfig>,
 }
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
@@ -268,6 +275,22 @@ pub struct NamingConfig {
 pub enum NameCaseConfig {
     Preserve,
     Pascal,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum EnumKeyCaseConfig {
+    Preserve,
+    Constant,
+    Pascal,
+    Camel,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum BodilessResponsesConfig {
+    Discard,
+    Read,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]

@@ -338,7 +338,9 @@ const toResult = async (
   };
   /** The body, and whether it was read as JSON. */
   const parse = async (entry: ResponseDef): Promise<[unknown, boolean]> => {
-    const parseAs = entry.contentTypes?.[mt] ?? entry.parseAs;
+    const declared = entry.contentTypes?.[mt] ?? entry.parseAs;
+    const parseAs =
+      declared === 'none' && entry.readWithContentType && mt !== '' ? 'auto' : declared;
     const json = parseAs === 'json' || (parseAs === 'auto' && guessParseAs(response) === 'json');
     return [await read(() => readBody(response, parseAs, entry)), json];
   };

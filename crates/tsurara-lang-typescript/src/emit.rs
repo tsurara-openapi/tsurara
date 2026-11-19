@@ -1,7 +1,9 @@
 //! Assembles output files from the IR (design.md chapter 7).
 
 use crate::OPERATION_DEF_VERSION;
-use crate::options::{EnumStyle, Layout, TypeScriptOptions as Options};
+use crate::options::{
+    BodilessResponses, EnumKeyCase, EnumStyle, Layout, TypeScriptOptions as Options,
+};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use tsurara_backend::OutputFile;
@@ -151,7 +153,7 @@ pub fn emit(
             ),
         };
         operation_files.push(path.clone());
-        let unit = operation_unit(op);
+        let unit = operation_unit(op, opts);
         manifest.operations.push(manifest_operation(
             op,
             OperationKind::Operation,
@@ -498,7 +500,9 @@ fn schema_unit(
     opts: &Options,
 ) {
     if opts.enum_style == EnumStyle::Const {
-        if let Some((values, keys, nullable)) = enum_node.and_then(enum_values) {
+        if let Some((values, keys, nullable)) =
+            enum_node.and_then(|e| enum_values(e, opts.enum_key_case))
+        {
             let mut code = String::new();
             if let Some(doc) = &decl.doc {
                 code.push_str(&print_doc(doc, 0));
@@ -530,8 +534,12 @@ fn schema_unit(
 }
 
 /// The values of an enum that can be an `as const` object (strings and numbers with distinct keys),
-/// with their keys: the member names of the definition (`x-enum-varnames`), or the values.
-fn enum_values(e: &tsurara_sem::ir::Enum) -> Option<(Vec<Literal>, Vec<String>, bool)> {
+/// with their keys: the member names of the definition (`x-enum-varnames`), or the values, in the
+/// case `enumKeyCase` asks for. Keys that a case makes equal are numbered (`A_B`, `A_B_2`).
+fn enum_values(
+    e: &tsurara_sem::ir::Enum,
+    case: EnumKeyCase,
+) -> Option<(Vec<Literal>, Vec<String>, bool)> {
     let mut values = Vec::new();
     let mut keys = Vec::new();
     for (i, v) in e.values.iter().enumerate() {
@@ -541,7 +549,30 @@ fn enum_values(e: &tsurara_sem::ir::Enum) -> Option<(Vec<Literal>, Vec<String>, 
             Literal::Boolean(_) => return None,
         };
         values.push(v.clone());
-        keys.push(e.names.get(i).cloned().unwrap_or(key));
+        let key = e.names.get(i).cloned().unwrap_or(key);
+        let converted = match case {
+            EnumKeyCase::Preserve => key.clone(),
+            EnumKeyCase::Constant => tsurara_naming::constant_case(&key),
+            EnumKeyCase::Pascal => tsurara_naming::pascal_case(&key),
+            EnumKeyCase::Camel => tsurara_naming::camel_case(&key),
+        };
+        keys.push(if converted.is_empty() { key } else { converted });
+    }
+    if case != EnumKeyCase::Preserve {
+        let separator = if case == EnumKeyCase::Constant {
+            "_"
+        } else {
+            ""
+        };
+        let mut taken: BTreeSet<String> = BTreeSet::new();
+        for key in &mut keys {
+            let base = key.clone();
+            let mut n = 2;
+            while !taken.insert(key.clone()) {
+                *key = format!("{base}{separator}{n}");
+                n += 1;
+            }
+        }
     }
     let distinct: BTreeSet<&String> = keys.iter().collect();
     (!values.is_empty() && distinct.len() == keys.len()).then_some((values, keys, e.nullable))
@@ -790,7 +821,51 @@ fn derived(op: &Operation, template: &str) -> String {
         .clone()
 }
 
-fn operation_unit(op: &Operation) -> Unit {
+/// With `bodilessResponses: read`, the error responses the definition gives no content get a
+/// placeholder content (no media type, `unknown`): the error is `unknown`, and the OperationDef
+/// reads a body that arrives with a Content-Type (`readWithContentType`). Not for `HEAD`, whose
+/// responses have no body, nor for a `default` that is the operation's success.
+fn with_bodiless_read(op: &Operation) -> Operation {
+    let has_success = op
+        .responses
+        .iter()
+        .any(|r| r.status.is_success() == Some(true));
+    let mut op = op.clone();
+    if op.method.eq_ignore_ascii_case("head") {
+        return op;
+    }
+    for r in &mut op.responses {
+        let error = match r.status {
+            Status::Default => has_success,
+            s => s.is_success() == Some(false),
+        };
+        if error && r.contents.is_empty() {
+            r.contents.push(tsurara_sem::operation::MediaContent {
+                media_type: String::new(),
+                ty: Type::Unknown,
+                encoding: Vec::new(),
+                body_kind: BodyKind::Auto,
+                events: None,
+                items: None,
+            });
+        }
+    }
+    op
+}
+
+/// The placeholder content of `with_bodiless_read`.
+fn is_bodiless_read(r: &Response) -> bool {
+    matches!(r.contents.as_slice(), [c] if c.media_type.is_empty())
+}
+
+fn operation_unit(op: &Operation, opts: &Options) -> Unit {
+    let read;
+    let op = if opts.bodiless_responses == BodilessResponses::Read {
+        read = with_bodiless_read(op);
+        &read
+    } else {
+        op
+    };
     let mut unit = Unit::default();
     let data = derived(op, "{P}Data");
     let responses = derived(op, "{P}Responses");
@@ -954,6 +1029,9 @@ fn body_def(body: &Body) -> String {
 }
 
 fn response_def(r: &Response) -> String {
+    if is_bodiless_read(r) {
+        return "{ parseAs: 'none', readWithContentType: true }".to_owned();
+    }
     let kinds: BTreeSet<&str> = r.contents.iter().map(parse_as).collect();
     let first = r.contents.first().map_or(BodyKind::None.as_str(), parse_as);
     let mut fields = vec![format!("parseAs: '{first}'")];

@@ -12,6 +12,30 @@ pub enum NameCase {
     Pascal,
 }
 
+/// How the keys of `enumStyle: const` objects are written.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum EnumKeyCase {
+    /// The member names of the definition, or the values, as they are.
+    #[default]
+    Preserve,
+    /// `PAYMENT_PENDING`.
+    Constant,
+    /// `PaymentPending`.
+    Pascal,
+    /// `paymentPending`.
+    Camel,
+}
+
+/// What happens to the body of an error response the definition gives no content.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum BodilessResponses {
+    /// The body is discarded; the error is `undefined`.
+    #[default]
+    Discard,
+    /// A body with a Content-Type is read by it; the error is `unknown`.
+    Read,
+}
+
 /// How function names are made from operation ids.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FunctionCase {
@@ -64,6 +88,11 @@ pub enum EnumStyle {
 pub struct TypeScriptOptions {
     pub schema_name_case: NameCase,
     pub function_name_case: FunctionCase,
+    /// Put before the names of schema types (`Api` gives `ApiPet`); names fixed by
+    /// `typescript.naming.overrides` are used as they are.
+    pub type_prefix: String,
+    pub enum_key_case: EnumKeyCase,
+    pub bodiless_responses: BodilessResponses,
     /// Final identifiers per JSON Pointer, used as is (`typescript.naming.overrides`).
     pub name_overrides: BTreeMap<String, String>,
     pub layout: Layout,
@@ -119,6 +148,9 @@ impl Default for TypeScriptOptions {
         Self {
             schema_name_case: NameCase::Preserve,
             function_name_case: FunctionCase::Preserve,
+            type_prefix: String::new(),
+            enum_key_case: EnumKeyCase::Preserve,
+            bodiless_responses: BodilessResponses::Discard,
             name_overrides: BTreeMap::new(),
             layout: Layout::Split,
             import_extension: ImportExtension::Js,
