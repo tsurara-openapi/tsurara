@@ -250,6 +250,8 @@ pub fn serialize_query_param(name: &str, value: &Value, def: &ParamDef) -> Vec<S
     }
 }
 
+/// The query string. `null` values are left out: RFC 6570, which the styles come from, treats
+/// null as undefined.
 pub fn build_query(
     values: &[(String, Value)],
     defs: &indexmap::IndexMap<String, ParamDef>,
@@ -257,6 +259,7 @@ pub fn build_query(
     let default = ParamDef::default();
     values
         .iter()
+        .filter(|(_, v)| !v.is_null())
         .flat_map(|(name, v)| serialize_query_param(name, v, defs.get(name).unwrap_or(&default)))
         .collect::<Vec<_>>()
         .join("&")
@@ -276,6 +279,7 @@ pub fn build_query_string(value: &Value, content_type: &str) -> String {
             };
             return map
                 .iter()
+                .filter(|(_, v)| !v.is_null())
                 .flat_map(|(k, v)| serialize_query_param(k, v, &def))
                 .collect::<Vec<_>>()
                 .join("&");
@@ -413,15 +417,12 @@ fn multipart(
                 ),
                 f.filename.as_deref(),
             ),
-            Part::Value(v @ Value::Object(_)) => part(
-                name,
-                json_text(v).as_bytes(),
-                Some(enc_type.unwrap_or("application/json")),
-                None,
-            ),
-            Part::Value(v @ Value::Array(_)) if enc_type.is_some() => {
+            Part::Value(v @ (Value::Object(_) | Value::Array(_))) if enc_type.is_some() => {
                 part(name, json_text(v).as_bytes(), enc_type, None)
             }
+            // A field with the JSON text, as the TypeScript runtime sends it (FormData can only
+            // give a part a Content-Type by making it a file).
+            Part::Value(v @ Value::Object(_)) => part(name, json_text(v).as_bytes(), None, None),
             Part::Value(v) if enc_type.is_some_and(|t| t.to_ascii_lowercase().contains("json")) => {
                 part(name, json_text(v).as_bytes(), enc_type, None)
             }

@@ -20,6 +20,9 @@ updates:
       # Later versions need Rust 1.88, above the MSRV (1.85).
       - dependency-name: regress
         versions: [">=0.10.5"]
+      # Later versions need Rust 1.88, above the MSRV of the Rust runtime (1.85).
+      - dependency-name: encoding_rs
+        versions: [">=0.8.36"]
 
   - package-ecosystem: npm
     directories:

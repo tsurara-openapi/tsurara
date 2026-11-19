@@ -156,6 +156,17 @@ pub struct EnumDecl {
     /// sent, the enum is closed; references say which (`Expr::Named::site`).
     pub open: bool,
     pub repr: EnumRepr,
+    /// Member names for the values, in the same order (`x-enum-varnames`), or empty: then members
+    /// are named after their values.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub names: Vec<String>,
+}
+
+impl EnumDecl {
+    /// The name of the member for value `i`, if the definition gives one.
+    pub fn name(&self, i: usize) -> Option<&str> {
+        self.names.get(i).map(String::as_str)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

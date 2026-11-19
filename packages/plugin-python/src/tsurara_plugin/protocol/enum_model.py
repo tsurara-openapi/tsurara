@@ -15,3 +15,6 @@ class EnumModel:
     values: list[LiteralModel]
     # Whether `null` is one of the values.
     nullable: bool
+    # Member names for the values, in the same order (`x-enum-varnames` or `x-enumNames`), or
+    # empty. Backends turn them into identifiers instead of the values.
+    names: list[str] | None = None

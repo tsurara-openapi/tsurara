@@ -2,6 +2,7 @@ export {
   type Client,
   type ClientOptions,
   createClient,
+  type FetchOptions,
   type HeaderValues,
   type Middleware,
   type MiddlewareRequest,
@@ -42,6 +43,7 @@ export { type QueryScope, type QueryScopeKey, queryScopeFilter } from './query.t
 export type {
   AnyResult,
   HttpErrorResult,
+  RawResult,
   ResultKind,
   SuccessResult,
   TransportFailure,

@@ -1188,6 +1188,14 @@ impl OperationBuilder<'_, '_> {
                     }
                 }
                 None if wildcard => BodyKind::Blob,
+                // A text media type whose schema is binary keeps its bytes: a charset other than
+                // UTF-8, or a file to pass on.
+                Some(k)
+                    if body_kind_of(mt) == BodyKind::Text
+                        && self.conv.is_binary_root(&mloc.join(k)) =>
+                {
+                    BodyKind::Blob
+                }
                 _ => body_kind_of(mt),
             };
             // Items of a sequential JSON response are JSON values.
@@ -1357,6 +1365,7 @@ impl OperationBuilder<'_, '_> {
                             .map(|n| crate::ir::Literal::String(n.clone()))
                             .collect(),
                         nullable: false,
+                        names: Vec::new(),
                     }),
                 })),
             };

@@ -112,7 +112,7 @@ jobs:
   test:
     steps:
       - uses: actions/checkout@v5
-      - run: npm install --global tsurara@0.1.0   # the `tsurara` binary of the version you support
+      - run: npm install --global tsurara@0.1.1   # the `tsurara` binary of the version you support
       - run: tsurara test-backend --backend 'node backend/backend.mjs' --check 'node backend/check.mjs'
       - run: npm test --prefix runtime
 ```

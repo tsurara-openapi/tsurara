@@ -125,7 +125,21 @@ jobs:
             fi
           done
           (cd dist && sha256sum -- * > SHA256SUMS)
-      - run: node scripts/npm-packages.mjs "$VERSION" binaries npm
+      # Packed here: an artifact does not keep file modes, a tarball does. Each binary must be
+      # executable in its tarball, since npm sets the mode only of `bin` entries on install.
+      - name: npm packages
+        run: |
+          node scripts/npm-packages.mjs "$VERSION" binaries npm-dirs
+          mkdir -p npm
+          for dir in npm-dirs/*; do
+            npm pack "./$dir" --pack-destination npm --ignore-scripts
+          done
+          for tarball in npm/tsurara-cli-*.tgz; do
+            if ! tar -tvzf "$tarball" | grep -E ' package/bin/tsurara(\.exe)?$' | grep -q '^-rwxr-xr-x'; then
+              echo "::error::the binary in $tarball is not executable"
+              exit 1
+            fi
+          done
       - if: github.ref_type == 'tag'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -230,8 +244,8 @@ jobs:
           if [ -n "$NPM_TOKEN" ]; then
             npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
           fi
-          for dir in npm/cli-* npm/tsurara; do
-            npm publish "./$dir" --provenance --access public --ignore-scripts
+          for tarball in npm/tsurara-cli-*.tgz npm/tsurara-[0-9]*.tgz; do
+            npm publish "./$tarball" --provenance --access public --ignore-scripts
           done
           for tarball in npm-libraries/*.tgz; do
             npm publish "./$tarball" --provenance --access public --ignore-scripts

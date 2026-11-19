@@ -8,14 +8,16 @@ mod paths;
 pub mod raw;
 
 use raw::{
-    EnumStyleConfig, ImportExtensionConfig, InputConfig, LayoutConfig, NameCaseConfig,
-    RuntimeConfig, TargetConfig, TypeConfig, ValidatorsConfig,
+    EnumStyleConfig, FunctionCaseConfig, ImportExtensionConfig, InputConfig, LayoutConfig,
+    NameCaseConfig, RuntimeConfig, TargetConfig, TypeConfig, ValidatorsConfig,
 };
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use tsurara_lang_typescript::TypeScriptOptions;
-use tsurara_lang_typescript::options::{EnumStyle, ImportExtension, Layout, NameCase};
+use tsurara_lang_typescript::options::{
+    EnumStyle, FunctionCase, ImportExtension, Layout, NameCase,
+};
 use tsurara_sem::ir::{External, Import};
 use tsurara_sem::options::{Filter, Options, RuntimeSource};
 use url::Url;
@@ -653,6 +655,12 @@ fn build_target(
             ts.schema_name_case = match case {
                 NameCaseConfig::Preserve => NameCase::Preserve,
                 NameCaseConfig::Pascal => NameCase::Pascal,
+            };
+        }
+        if let Some(case) = naming.function_case {
+            ts.function_name_case = match case {
+                FunctionCaseConfig::Preserve => FunctionCase::Preserve,
+                FunctionCaseConfig::Camel => FunctionCase::Camel,
             };
         }
     }

@@ -88,7 +88,7 @@ fn packaged_crates(target: &Path) -> PathBuf {
     for c in CRATES {
         let tar = Command::new("tar")
             .arg("xzf")
-            .arg(target.join(format!("package/{c}-0.1.0.crate")))
+            .arg(target.join(format!("package/{c}-{}.crate", env!("CARGO_PKG_VERSION"))))
             .arg("-C")
             .arg(&unpacked)
             .output()
@@ -98,8 +98,10 @@ fn packaged_crates(target: &Path) -> PathBuf {
             "{}",
             String::from_utf8_lossy(&tar.stderr)
         );
-        let manifest =
-            std::fs::read_to_string(unpacked.join(format!("{c}-0.1.0/Cargo.toml"))).unwrap();
+        let manifest = std::fs::read_to_string(
+            unpacked.join(format!("{c}-{}/Cargo.toml", env!("CARGO_PKG_VERSION"))),
+        )
+        .unwrap();
         assert!(
             !manifest.contains("path = \".."),
             "{c} has a path dependency:\n{manifest}"
@@ -135,7 +137,9 @@ fn rust_backend_on_published_crates_matches_in_process() {
     for c in CRATES {
         config.push_str(&format!(
             "{c} = {{ path = {:?} }}\n",
-            unpacked.join(format!("{c}-0.1.0")).to_string_lossy()
+            unpacked
+                .join(format!("{c}-{}", env!("CARGO_PKG_VERSION")))
+                .to_string_lossy()
         ));
     }
     std::fs::create_dir_all(project.path().join(".cargo")).unwrap();

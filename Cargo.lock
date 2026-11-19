@@ -1994,7 +1994,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "tsurara-backend"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "schemars",
  "serde",
@@ -2009,7 +2009,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "jsonschema",
@@ -2036,7 +2036,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-config"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "schemars",
  "serde",
@@ -2055,7 +2055,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-lang-go"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "jsonschema",
  "serde_json",
@@ -2072,7 +2072,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-lang-python"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "jsonschema",
  "serde_json",
@@ -2091,7 +2091,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-lang-rust"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "jsonschema",
  "serde_json",
@@ -2108,7 +2108,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-lang-typescript"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "insta",
  "jsonschema",
@@ -2127,7 +2127,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-loader"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "percent-encoding",
  "schemars",
@@ -2141,7 +2141,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-lower"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "jsonschema",
  "schemars",
@@ -2155,7 +2155,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-naming"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "schemars",
  "serde",
@@ -2163,7 +2163,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-plugin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -2173,15 +2173,15 @@ dependencies = [
 
 [[package]]
 name = "tsurara-pretty"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "tsurara-runtimes"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "tsurara-sample"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "jsonschema",
  "serde",
@@ -2193,7 +2193,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-sem"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "indexmap",
  "insta",
@@ -2211,7 +2211,7 @@ dependencies = [
 
 [[package]]
 name = "tsurara-testkit"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde_json",
  "tempfile",

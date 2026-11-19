@@ -17,3 +17,6 @@ class EnumDecl:
     # sent, the enum is closed; references say which (`Expr::Named::site`).
     open: bool
     repr: EnumRepr
+    # Member names for the values, in the same order (`x-enum-varnames`), or empty: then members
+    # are named after their values.
+    names: list[str] | None = None

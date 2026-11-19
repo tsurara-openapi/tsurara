@@ -460,7 +460,11 @@ impl Printer<'_> {
             let mut out = format!("pub type {name} = {ty};\n");
             if ty == "i64" || ty == "f64" {
                 let texts: Vec<String> = e.values.iter().map(literal_text).collect();
-                let prefixed: Vec<String> = texts.iter().map(|t| format!("{name}_{t}")).collect();
+                let prefixed: Vec<String> = texts
+                    .iter()
+                    .enumerate()
+                    .map(|(i, t)| format!("{name}_{}", e.name(i).unwrap_or(t)))
+                    .collect();
                 let raws: Vec<&str> = prefixed.iter().map(String::as_str).collect();
                 for (v, c) in texts.iter().zip(allocate(Context::Constant, &raws)) {
                     let v = if ty == "f64" && !v.contains('.') {
@@ -474,7 +478,11 @@ impl Printer<'_> {
             return out;
         }
         let texts: Vec<String> = e.values.iter().map(literal_text).collect();
-        let mut raws: Vec<&str> = texts.iter().map(String::as_str).collect();
+        let mut raws: Vec<&str> = texts
+            .iter()
+            .enumerate()
+            .map(|(i, t)| e.name(i).unwrap_or(t))
+            .collect();
         if e.open {
             raws.push("Unknown");
         }

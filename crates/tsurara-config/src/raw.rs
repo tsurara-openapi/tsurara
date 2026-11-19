@@ -191,6 +191,8 @@ pub struct TypeScriptNamingConfig {
     pub overrides: BTreeMap<String, String>,
     /// How schema names are converted (default `preserve`).
     pub schema_case: Option<NameCaseConfig>,
+    /// How function names are made from operation ids (default `preserve`).
+    pub function_case: Option<FunctionCaseConfig>,
 }
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
@@ -266,6 +268,13 @@ pub struct NamingConfig {
 pub enum NameCaseConfig {
     Preserve,
     Pascal,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum FunctionCaseConfig {
+    Preserve,
+    Camel,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, JsonSchema)]

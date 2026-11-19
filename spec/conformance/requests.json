@@ -884,7 +884,7 @@
     }
   },
   {
-    "name": "query null is empty and missing values are omitted",
+    "name": "query null and missing values are omitted",
     "operation": {
       "v": 1,
       "id": "op",
@@ -913,7 +913,7 @@
     },
     "expect": {
       "method": "GET",
-      "url": "https://api.test/q?b=&c=x%20y&d=true",
+      "url": "https://api.test/q?c=x%20y&d=true",
       "body": null
     }
   },
@@ -938,6 +938,7 @@
     "input": {
       "querystring": {
         "a": 1,
+        "c": null,
         "b": ["x", "y"]
       }
     },
@@ -1266,7 +1267,7 @@
     }
   },
   {
-    "name": "multipart appends array items one by one and follows encoding",
+    "name": "multipart appends array items one by one, sends objects as JSON text and follows encoding",
     "operation": {
       "v": 1,
       "id": "op",
@@ -1303,7 +1304,10 @@
         "meta": {
           "a": 1
         },
-        "n": 3
+        "n": 3,
+        "extra": {
+          "b": [1, 2]
+        }
       }
     },
     "expect": {
@@ -1332,7 +1336,8 @@
               }
             }
           ],
-          ["n", "3"]
+          ["n", "3"],
+          ["extra", "{\"b\":[1,2]}"]
         ]
       }
     }

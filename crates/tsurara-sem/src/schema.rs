@@ -443,6 +443,56 @@ impl<'a> Converter<'a> {
         self.mark_candidate(loc, ty)
     }
 
+    /// The member names of an `enum` (`x-enum-varnames`, or NSwag's `x-enumNames`): one distinct
+    /// string per value. Names that do not fit the values are ignored with a warning.
+    fn enum_names(
+        &mut self,
+        loc: &Loc,
+        map: &Map<String, Value>,
+        values: &[Value],
+    ) -> Option<Vec<String>> {
+        let (key, names) = ["x-enum-varnames", "x-enumNames"]
+            .into_iter()
+            .find_map(|k| map.get(k).map(|v| (k, v)))?;
+        let names: Option<Vec<String>> = names.as_array().and_then(|names| {
+            names
+                .iter()
+                .map(|n| n.as_str().map(str::to_owned))
+                .collect()
+        });
+        let problem = match &names {
+            None => Some("is not a list of strings".to_owned()),
+            Some(names) if names.len() != values.len() => Some(format!(
+                "has {} names for {} values",
+                names.len(),
+                values.len()
+            )),
+            Some(names) => {
+                // Names of `null` and of repeated values are dropped with them; the rest must differ.
+                let mut seen: Vec<&Value> = Vec::new();
+                let mut kept: Vec<&str> = Vec::new();
+                for (v, n) in values.iter().zip(names) {
+                    if v.is_null() || seen.contains(&v) {
+                        continue;
+                    }
+                    seen.push(v);
+                    kept.push(n);
+                }
+                let distinct: std::collections::BTreeSet<&str> = kept.iter().copied().collect();
+                (distinct.len() != kept.len()).then(|| "names a value twice".to_owned())
+            }
+        };
+        if let Some(problem) = problem {
+            self.warn(
+                WarningKind::InvalidDefinition,
+                &loc.join(key),
+                format!("`{key}` {problem}; the members are named after their values"),
+            );
+            return None;
+        }
+        names
+    }
+
     /// Whether the schema at `loc` (following `$ref`s) is a binary string, as the root of a body.
     pub fn is_binary_root(&self, loc: &Loc) -> bool {
         let Ok((_, Value::Object(map))) = self.set.deref_all(loc) else {
@@ -842,7 +892,8 @@ impl<'a> Converter<'a> {
                     parts.push(t);
                 }
             } else {
-                parts.push(enum_type(values));
+                let names = self.enum_names(loc, map, values);
+                parts.push(enum_type(values, names));
             }
         } else if let Some(t) =
             self.base_type(loc, map, &types, mode, has_composition, &mut extra_required)
@@ -1668,13 +1719,15 @@ fn binary_type() -> Type {
     Type::Binary
 }
 
-/// An `enum` whose values are all literals or `null`.
-fn enum_type(values: &[Value]) -> Type {
+/// An `enum` whose values are all literals or `null`, with the member names for the values, if
+/// there are as many.
+fn enum_type(values: &[Value], names: Option<Vec<String>>) -> Type {
     let mut e = Enum {
         values: Vec::new(),
         nullable: false,
+        names: Vec::new(),
     };
-    for v in values {
+    for (i, v) in values.iter().enumerate() {
         let lit = match v {
             Value::String(s) => Literal::String(s.clone()),
             Value::Number(n) => Literal::Number(n.clone()),
@@ -1686,6 +1739,9 @@ fn enum_type(values: &[Value]) -> Type {
         };
         if !e.values.contains(&lit) {
             e.values.push(lit);
+            if let Some(names) = &names {
+                e.names.push(names[i].clone());
+            }
         }
     }
     Type::Enum(e)

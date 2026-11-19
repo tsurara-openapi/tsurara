@@ -498,19 +498,19 @@ fn schema_unit(
     opts: &Options,
 ) {
     if opts.enum_style == EnumStyle::Const {
-        if let Some((values, nullable)) = enum_node.and_then(enum_values) {
+        if let Some((values, keys, nullable)) = enum_node.and_then(enum_values) {
             let mut code = String::new();
             if let Some(doc) = &decl.doc {
                 code.push_str(&print_doc(doc, 0));
             }
             writeln!(code, "export const {} = {{", decl.name).unwrap();
-            for v in &values {
-                let (key, value) = match v {
-                    Literal::String(s) => (property_key(s), string_literal(s)),
-                    Literal::Number(n) => (property_key(&n.to_string()), n.to_string()),
-                    Literal::Boolean(b) => (b.to_string(), b.to_string()),
+            for (v, key) in values.iter().zip(&keys) {
+                let value = match v {
+                    Literal::String(s) => string_literal(s),
+                    Literal::Number(n) => n.to_string(),
+                    Literal::Boolean(b) => b.to_string(),
                 };
-                writeln!(code, "  {key}: {value},").unwrap();
+                writeln!(code, "  {}: {value},", property_key(key)).unwrap();
             }
             writeln!(code, "}} as const;").unwrap();
             let null = if nullable { " | null" } else { "" };
@@ -529,23 +529,22 @@ fn schema_unit(
     unit.alias(&decl.name, &decl.ty, decl.doc.as_ref());
 }
 
-/// The values of an enum that can be an `as const` object: strings and numbers with distinct keys.
-fn enum_values(e: &tsurara_sem::ir::Enum) -> Option<(Vec<Literal>, bool)> {
+/// The values of an enum that can be an `as const` object (strings and numbers with distinct keys),
+/// with their keys: the member names of the definition (`x-enum-varnames`), or the values.
+fn enum_values(e: &tsurara_sem::ir::Enum) -> Option<(Vec<Literal>, Vec<String>, bool)> {
     let mut values = Vec::new();
-    for v in &e.values {
-        match v {
-            Literal::String(_) | Literal::Number(_) => values.push(v.clone()),
-            Literal::Boolean(_) => return None,
-        }
-    }
-    let keys: BTreeSet<String> = values
-        .iter()
-        .map(|v| match v {
+    let mut keys = Vec::new();
+    for (i, v) in e.values.iter().enumerate() {
+        let key = match v {
             Literal::String(s) => s.clone(),
-            other => format!("{other:?}"),
-        })
-        .collect();
-    (!values.is_empty() && keys.len() == values.len()).then_some((values, e.nullable))
+            Literal::Number(n) => n.to_string(),
+            Literal::Boolean(_) => return None,
+        };
+        values.push(v.clone());
+        keys.push(e.names.get(i).cloned().unwrap_or(key));
+    }
+    let distinct: BTreeSet<&String> = keys.iter().collect();
+    (!values.is_empty() && distinct.len() == keys.len()).then_some((values, keys, e.nullable))
 }
 
 /// File name per tag. Operations without tags go in `default`.

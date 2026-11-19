@@ -609,3 +609,18 @@ fn invalid_go_types_and_unknown_section_keys_are_reported_where_they_are() {
     let msg = load_with_env(&config, &no_env).unwrap_err().to_string();
     assert!(msg.contains("date-time"), "{msg}");
 }
+
+#[test]
+fn function_case_is_read() {
+    let (_tmp, root) = tempdir();
+    let config = write(
+        &root,
+        "tsurara.config.yaml",
+        "input: openapi.yaml\noutput: out\ntypescript:\n  naming:\n    functionCase: camel\n",
+    );
+    let config = load_with_env(&config, &no_env).unwrap();
+    assert_eq!(
+        ts(&config.targets[0]).function_name_case,
+        tsurara_lang_typescript::options::FunctionCase::Camel
+    );
+}

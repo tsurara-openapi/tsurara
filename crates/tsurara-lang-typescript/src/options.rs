@@ -12,6 +12,16 @@ pub enum NameCase {
     Pascal,
 }
 
+/// How function names are made from operation ids.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FunctionCase {
+    /// Keep operation ids that are identifiers as is.
+    #[default]
+    Preserve,
+    /// Convert every operation id to camelCase.
+    Camel,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Layout {
     /// One file per schema, operation, and webhook.
@@ -53,6 +63,7 @@ pub enum EnumStyle {
 #[derive(Debug, Clone)]
 pub struct TypeScriptOptions {
     pub schema_name_case: NameCase,
+    pub function_name_case: FunctionCase,
     /// Final identifiers per JSON Pointer, used as is (`typescript.naming.overrides`).
     pub name_overrides: BTreeMap<String, String>,
     pub layout: Layout,
@@ -107,6 +118,7 @@ impl Default for TypeScriptOptions {
     fn default() -> Self {
         Self {
             schema_name_case: NameCase::Preserve,
+            function_name_case: FunctionCase::Preserve,
             name_overrides: BTreeMap::new(),
             layout: Layout::Split,
             import_extension: ImportExtension::Js,

@@ -237,6 +237,10 @@ func serializeQueryParam(name string, value any, def ParamDef) []string {
 func buildQuery(values []Member, defs Ordered[ParamDef]) string {
 	var parts []string
 	for _, m := range values {
+		// RFC 6570, which the styles come from, treats null as undefined.
+		if m.Value == nil {
+			continue
+		}
 		def, _ := defs.Get(m.Key)
 		parts = append(parts, serializeQueryParam(m.Key, m.Value, def)...)
 	}
@@ -250,6 +254,9 @@ func buildQueryString(value any, contentType string) string {
 		def := ParamDef{Style: "form", Explode: &explode}
 		var parts []string
 		for _, m := range obj {
+			if m.Value == nil {
+				continue
+			}
 			parts = append(parts, serializeQueryParam(m.Key, m.Value, def)...)
 		}
 		return strings.Join(parts, "&")
@@ -378,11 +385,9 @@ func multipart(parts []Part, encoding Ordered[EncodingDef]) encoded {
 		}
 		switch v := p.Value.(type) {
 		case Object:
-			ct := encType
-			if ct == "" {
-				ct = "application/json"
-			}
-			part(p.Name, []byte(JSONText(v)), ct, "")
+			// Without an encoding, a field with the JSON text, as the TypeScript runtime sends it
+			// (FormData can only give a part a Content-Type by making it a file).
+			part(p.Name, []byte(JSONText(v)), encType, "")
 		case []any:
 			if encType != "" {
 				part(p.Name, []byte(JSONText(v)), encType, "")

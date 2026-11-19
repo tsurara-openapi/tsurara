@@ -1076,12 +1076,36 @@ fn guess(response: &HttpResponse) -> ParseAs {
     }
 }
 
+/// The `charset` parameter of a Content-Type.
+fn charset_of(content_type: &str) -> Option<&str> {
+    content_type.split(';').skip(1).find_map(|param| {
+        let (name, value) = param.split_once('=')?;
+        if !name.trim().eq_ignore_ascii_case("charset") {
+            return None;
+        }
+        let value = value.trim().trim_matches('"').trim();
+        (!value.is_empty()).then_some(value)
+    })
+}
+
+/// A text body in the charset of its Content-Type (UTF-8 without one).
+fn decode_text(response: &HttpResponse) -> Result<String, String> {
+    let charset = response.header("content-type").and_then(charset_of);
+    let encoding = match charset {
+        None => encoding_rs::UTF_8,
+        Some(label) => encoding_rs::Encoding::for_label(label.as_bytes())
+            .ok_or_else(|| format!("the response has charset {label}, which cannot be decoded"))?,
+    };
+    Ok(encoding
+        .decode_without_bom_handling(&response.body)
+        .0
+        .into_owned())
+}
+
 fn read(response: &HttpResponse, parse_as: ParseAs) -> Result<Payload, String> {
     match parse_as {
         ParseAs::None => Ok(Payload::None),
-        ParseAs::Text => Ok(Payload::Text(
-            String::from_utf8_lossy(&response.body).into_owned(),
-        )),
+        ParseAs::Text => decode_text(response).map(Payload::Text),
         ParseAs::Blob
         | ParseAs::Stream
         | ParseAs::Events
@@ -1112,7 +1136,10 @@ fn read_undocumented(response: &HttpResponse) -> Payload {
             .unwrap_or_else(|_| {
                 Payload::Text(String::from_utf8_lossy(&response.body).into_owned())
             }),
-        other => read(response, other).unwrap_or(Payload::None),
+        // A charset that cannot be decoded: the text as UTF-8 rather than nothing.
+        other => read(response, other).unwrap_or_else(|_| {
+            Payload::Text(String::from_utf8_lossy(&response.body).into_owned())
+        }),
     }
 }
 
