@@ -7,4 +7,7 @@ type Enum struct {
 	Values []Literal `json:"values"`
 	// Whether `null` is one of the values.
 	Nullable bool `json:"nullable"`
+	// Member names for the values, in the same order (`x-enum-varnames` or `x-enumNames`), or
+	// empty. Backends turn them into identifiers instead of the values.
+	Names []string `json:"names,omitzero"`
 }

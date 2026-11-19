@@ -841,6 +841,16 @@ TYPE_DEFS: dict[str, Any] = {
                     "type": "bool",
                     "presence": "required",
                 },
+                {
+                    "wire": "names",
+                    "member": "names",
+                    "type": {
+                        "list": {
+                            "scalar": "string",
+                        },
+                    },
+                    "presence": "optional",
+                },
             ],
             "kind": "record",
         },
@@ -2503,6 +2513,16 @@ TYPE_DEFS: dict[str, Any] = {
                         "ref": "EnumRepr",
                     },
                     "presence": "required",
+                },
+                {
+                    "wire": "names",
+                    "member": "names",
+                    "type": {
+                        "list": {
+                            "scalar": "string",
+                        },
+                    },
+                    "presence": "optional",
                 },
             ],
             "kind": "record",

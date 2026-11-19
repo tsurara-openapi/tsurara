@@ -1,6 +1,6 @@
 use tsurara_lang_typescript::TypeScriptOptions;
 use tsurara_lang_typescript::generate;
-use tsurara_lang_typescript::options::NameCase;
+use tsurara_lang_typescript::options::{FunctionCase, NameCase};
 use tsurara_loader::{DocumentSet, parse_document};
 use tsurara_sem::options::Filter;
 use tsurara_sem::{Options, WarningKind, build_model};
@@ -382,5 +382,41 @@ components:
     assert!(
         all.contains("export type NewPetOperationWebhookRequest ="),
         "{all}"
+    );
+}
+
+#[test]
+fn function_names_can_be_camel_case() {
+    let doc = set(r##"
+openapi: 3.1.0
+info: { title: t, version: "1" }
+paths:
+  /a:
+    get: { operationId: ListPets, responses: { "204": { description: ok } } }
+    post: { operationId: create_pet, responses: { "204": { description: ok } } }
+    put: { operationId: updatePet, responses: { "204": { description: ok } } }
+"##);
+    let functions = |case: FunctionCase| {
+        let ts = TypeScriptOptions {
+            function_name_case: case,
+            ..TypeScriptOptions::default()
+        };
+        let out = generate(&doc, &Options::default(), &ts).unwrap();
+        let mut paths: Vec<String> = out
+            .files
+            .iter()
+            .filter_map(|f| f.path.strip_prefix("operations/")?.strip_suffix(".ts"))
+            .map(str::to_owned)
+            .collect();
+        paths.sort();
+        paths
+    };
+    assert_eq!(
+        functions(FunctionCase::Preserve),
+        ["ListPets", "create_pet", "updatePet"]
+    );
+    assert_eq!(
+        functions(FunctionCase::Camel),
+        ["createPet", "listPets", "updatePet"]
     );
 }

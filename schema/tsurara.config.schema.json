@@ -879,6 +879,17 @@
               "type": "null"
             }
           ]
+        },
+        "functionCase": {
+          "description": "How function names are made from operation ids (default `preserve`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FunctionCaseConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -888,6 +899,13 @@
       "enum": [
         "preserve",
         "pascal"
+      ]
+    },
+    "FunctionCaseConfig": {
+      "type": "string",
+      "enum": [
+        "preserve",
+        "camel"
       ]
     },
     "PythonConfig": {

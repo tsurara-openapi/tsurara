@@ -110,8 +110,10 @@ fn assign(model: &Model, module: &Module, opts: &Options) -> (Assigned, Names) {
                 let consts = e
                     .values
                     .iter()
-                    .map(|v| {
-                        let raw = format!("{}_{}", types[i], literal_text(v));
+                    .enumerate()
+                    .map(|(j, v)| {
+                        let member = e.name(j).map_or_else(|| literal_text(v), str::to_owned);
+                        let raw = format!("{}_{}", types[i], member);
                         let pointer = format!("#{}/{}", d.loc.pointer, literal_text(v));
                         claim(&mut names, Context::Constant, &raw, &pointer)
                     })

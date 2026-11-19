@@ -216,3 +216,47 @@ components:
     assert!(index.contains("export * from './schemas/Status.js';"));
     assert!(index.contains("export type * from './schemas/Mixed.js';"));
 }
+
+#[test]
+fn const_enum_keys_are_named_by_x_enum_varnames() {
+    let doc = parse_document(
+        br#"
+openapi: 3.1.0
+info: { title: t, version: "1" }
+paths: {}
+components:
+  schemas:
+    Color: { type: string, enum: [r, g], x-enum-varnames: [Red, Green] }
+    Size: { type: integer, enum: [1, 2], x-enumNames: [Small, Large] }
+"#,
+    )
+    .unwrap();
+    let set = DocumentSet::from_value(doc);
+    let out = generate(
+        &set,
+        &Options::default(),
+        &TypeScriptOptions {
+            enum_style: EnumStyle::Const,
+            ..TypeScriptOptions::default()
+        },
+    )
+    .unwrap();
+    let pick = |p: &str| {
+        out.files
+            .iter()
+            .find(|f| f.path == p)
+            .unwrap()
+            .contents
+            .clone()
+    };
+    let color = pick("schemas/Color.ts");
+    assert!(
+        color.contains("export const Color = {\n  Red: 'r',\n  Green: 'g',\n} as const;"),
+        "{color}"
+    );
+    let size = pick("schemas/Size.ts");
+    assert!(
+        size.contains("export const Size = {\n  Small: 1,\n  Large: 2,\n} as const;"),
+        "{size}"
+    );
+}

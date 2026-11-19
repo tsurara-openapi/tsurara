@@ -168,6 +168,10 @@ pub struct Enum {
     pub values: Vec<Literal>,
     /// Whether `null` is one of the values.
     pub nullable: bool,
+    /// Member names for the values, in the same order (`x-enum-varnames` or `x-enumNames`), or
+    /// empty. Backends turn them into identifiers instead of the values.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub names: Vec<String>,
 }
 
 impl Enum {

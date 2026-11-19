@@ -279,6 +279,11 @@ export type Enum = {
   values: Literal[];
   /** Whether `null` is one of the values. */
   nullable: boolean;
+  /**
+   * Member names for the values, in the same order (`x-enum-varnames` or `x-enumNames`), or
+   * empty. Backends turn them into identifiers instead of the values.
+   */
+  names?: string[];
 };
 
 export type Literal =
@@ -775,6 +780,11 @@ export type EnumDecl = {
    */
   open: boolean;
   repr: EnumRepr;
+  /**
+   * Member names for the values, in the same order (`x-enum-varnames`), or empty: then members
+   * are named after their values.
+   */
+  names?: string[];
 };
 
 export type EnumRepr = 'native' | 'constants';

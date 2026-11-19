@@ -59,7 +59,7 @@ with Client("https://petstore3.swagger.io/api/v3") as client:
 | Nullable property | `name: T \| None` |
 | Optional and nullable | `name: T \| None \| Missing = MISSING` (`_support.py`); missing and `null` differ only here (Q3) |
 | `additionalProperties` | `additional_properties: dict[str, T] = field(default_factory=dict)` |
-| Enum | `class Status(Enum)` with members named from the values (`IT_S`, `VALUE_1`); at a received site the annotation is `Status \| str` (or `\| int`) |
+| Enum | `class Status(Enum)` with members named from the values (`IT_S`, `VALUE_1`), or from `x-enum-varnames` or `x-enumNames` when the definition has them; at a received site the annotation is `Status \| str` (or `\| int`) |
 | Open tagged union | At a received site, `Cat \| Dog \| dict[str, Any]`: an unlisted discriminator keeps the JSON object |
 | Object with only `additionalProperties` | `dict[str, T]` |
 | `oneOf`, `anyOf`, type arrays | `Name: TypeAlias = "A \| B"` |

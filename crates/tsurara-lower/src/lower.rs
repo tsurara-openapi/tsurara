@@ -360,6 +360,7 @@ impl Lowerer<'_> {
             values: e.values.clone(),
             open: self.caps.strict_decoding && received(site),
             repr,
+            names: e.names.clone(),
         }
     }
 

@@ -69,7 +69,14 @@ pub fn allocate(model: &Model, module: &Module, policy: &dyn NamingPolicy) -> Al
                 Context::Member,
                 r.fields.iter().map(|f| f.wire_name.clone()).collect(),
             ),
-            DeclKind::Enum(e) => (Context::Constant, e.values.iter().map(literal).collect()),
+            DeclKind::Enum(e) => (
+                Context::Constant,
+                e.values
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| e.name(i).map_or_else(|| literal(v), str::to_owned))
+                    .collect(),
+            ),
             _ => (Context::Member, Vec::new()),
         };
         let mut scope = Names::new();

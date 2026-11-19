@@ -1,0 +1,30 @@
+# Enum members named by `x-enum-varnames` (openapi-generator) and `x-enumNames` (NSwag): names that
+# need each language's case, a keyword, names of integer enums, a nullable enum with a name for
+# `null`, and names that do not fit the values (a warning; the members are named after the values).
+# Text bodies with a binary schema, which are read as bytes.
+openapi: 3.1.0
+info: { title: enum member names, version: "1" }
+paths:
+  /report:
+    get:
+      operationId: getReport
+      parameters:
+        - { name: color, in: query, schema: { $ref: "#/components/schemas/Color" } }
+      responses:
+        "200":
+          description: ok
+          content:
+            text/csv: { schema: { type: string, format: binary } }
+components:
+  schemas:
+    Color: { type: string, enum: [r, g, b], x-enum-varnames: [RED_ONE, green-two, type] }
+    Size: { type: integer, enum: [1, 2, 3], x-enumNames: [Small, Medium, Large] }
+    Level: { type: [string, "null"], enum: [lo, hi, null], x-enum-varnames: [Low, High, None] }
+    Short: { type: string, enum: [a, b], x-enum-varnames: [A] }
+    Paint:
+      type: object
+      required: [color]
+      properties:
+        color: { $ref: "#/components/schemas/Color" }
+        size: { $ref: "#/components/schemas/Size" }
+        level: { $ref: "#/components/schemas/Level" }

@@ -8,4 +8,7 @@ type EnumDecl struct {
 	// sent, the enum is closed; references say which (`Expr::Named::site`).
 	Open bool     `json:"open"`
 	Repr EnumRepr `json:"repr"`
+	// Member names for the values, in the same order (`x-enum-varnames`), or empty: then members
+	// are named after their values.
+	Names []string `json:"names,omitzero"`
 }

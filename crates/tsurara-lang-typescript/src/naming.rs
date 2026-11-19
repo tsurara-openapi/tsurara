@@ -1,6 +1,6 @@
 //! TypeScript naming (design.md 6.6, 18.6): the policy, and the replay of the model's name requests.
 
-use crate::options::{NameCase, TypeScriptOptions};
+use crate::options::{FunctionCase, NameCase, TypeScriptOptions};
 use std::collections::{BTreeMap, HashMap};
 use tsurara_naming::{
     Context, Names, NamingPolicy, camel_case, function_name, function_name_from_path, pascal_case,
@@ -292,6 +292,9 @@ pub fn assign(model: &Model, common: &Options, ts: &TypeScriptOptions) -> (Assig
                 path,
             } => {
                 let raw = fixed.or(preferred).unwrap_or_else(|| match operation_id {
+                    Some(id) if ts.function_name_case == FunctionCase::Camel => {
+                        function_name(&tsurara_naming::camel_case(id))
+                    }
                     Some(id) => function_name(id),
                     None => function_name_from_path(method, path),
                 });

@@ -50,6 +50,7 @@ typescript:
     "#/components/schemas/Id": string
   naming:
     schemaCase: preserve
+    functionCase: preserve
     overrides:
       "#/components/schemas/Error": ApiErrorBody
 ```
@@ -69,6 +70,7 @@ typescript:
 | `typeMappings` | | A type per `format` (`uuid`, `date`, ...): a type expression, or `{ type, import: { from, name } }`. Paths in `from` that start with `.` are relative to this file. A mapping must not change what JSON parsing produces: `Date` for `date-time` and `bigint` for `int64` are errors |
 | `overrides` | | A type per JSON Pointer, in the same form as `typeMappings` |
 | `naming.schemaCase` | `preserve` | `preserve` keeps component names that are identifiers; `pascal` makes every type name PascalCase |
+| `naming.functionCase` | `preserve` | `preserve` keeps operation ids that are identifiers as function names (`ListPets`, `get_pet`); `camel` makes every function name camelCase (`listPets`, `getPet`) |
 | `naming.overrides` | | Final TypeScript identifiers per JSON Pointer, used as they are |
 
 Types in `typeMappings`, `overrides` and `x-tsurara-type` must be type expressions (names, type arguments, arrays, `|`, `&`, literals); anything else is an error in the configuration and ignored with a warning in a definition.

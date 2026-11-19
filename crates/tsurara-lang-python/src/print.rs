@@ -193,7 +193,12 @@ pub(crate) fn assign(model: &Model, module: &Module, opts: &Options) -> Assigned
                 enum_members.push(Vec::new());
             }
             DeclKind::Enum(e) => {
-                let texts: Vec<String> = e.values.iter().map(literal_name).collect();
+                let texts: Vec<String> = e
+                    .values
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| e.name(i).map_or_else(|| literal_name(v), str::to_owned))
+                    .collect();
                 let raws: Vec<(&str, bool)> = texts.iter().map(|t| (t.as_str(), false)).collect();
                 enum_members.push(allocate(Context::Constant, &raws));
                 members.push(Vec::new());

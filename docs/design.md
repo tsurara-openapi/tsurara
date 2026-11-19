@@ -385,7 +385,7 @@ export function getPetById<Ctx>(
 - The sources are embedded in the binary at build time (`tsurara-runtimes`, a build script over `runtimes/`, tests left out), so the copy always matches the generator.
 - Every copied file starts with the generated-file marker and a line naming the MIT license. Stale-file deletion and `tsurara check` cover the copy like generated code: an edit fails `check`, `generate` restores it, and leaving vendoring deletes it. The runtime version marker is not written, and the version check of `check` does not apply (the copy is the version).
 - The copy is adapted only where the language requires it: TypeScript's relative imports take the import extension; Rust's `crate::`, `$crate::` and `tsurara_client::` paths become `runtimeCrate`, `#[macro_export]` macros are re-exported by path, the cargo features are resolved (the client layer only with operations, the mock transport only with `rust.mocks`, under `cfg(any(test, feature = "mocks"))`), and `clippy::collapsible_if` is allowed because the runtime keeps Rust 1.85; Go's imports of the runtime and `tsuraratest` take the vendored path.
-- Third-party dependencies are not copied: `generate` names them (httpx for Python; serde, serde_json and indexmap, and with operations tokio, fastrand, httpdate and reqwest for Rust, also listed in `mod.rs`). TypeScript and Go have none.
+- Third-party dependencies are not copied: `generate` names them (httpx for Python; serde, serde_json and indexmap, and with operations tokio, fastrand, httpdate, encoding_rs and reqwest for Rust, also listed in `mod.rs`). TypeScript and Go have none.
 - With `operations: false`, Rust copies the types layer only (18.9); TypeScript copies nothing when no file imports the runtime.
 - Each target gets its own copy. A shared location for several targets is not offered: targets of one repository that share a runtime are better served by the package.
 
@@ -424,7 +424,9 @@ Authentication follows the definition. Each OperationDef carries the operation's
 
 The type parameter `Ctx` is the type of the context passed per call, used for things like passing a per-request trace ID in SSR. Module augmentation is not used, so apps can have different types without interfering with each other.
 
-`signal`, `headers`, `timeout`, `baseUrl`, and `context` can be overridden per call through `RequestOptions`.
+`signal`, `headers`, `timeout`, `baseUrl`, `context` and `fetchOptions` can be overridden per call through `RequestOptions`. `fetchOptions` (also a client option, with the call's spread over the client's) are passed to `fetch` as they are, such as `cache`, `credentials` or Next.js's `next`; the method, headers, body, signal and redirect handling stay the client's, and middleware sees them as `req.fetchOptions`.
+
+`client.requestRaw(def, input)` runs a call through the same steps (headers, auth, middleware, redirects, timeout until the response) but returns `{ kind: 'response', ok, status, documented, response }` with the body unread, or a transport failure: for bodies that are streamed on or read in a way the definition does not describe. Generated functions do not use it, and `onResult` does not see it.
 
 ### 8.2 Result
 
@@ -434,9 +436,9 @@ The Promise returned by `client.request` never rejects. HTTP errors, network fai
 |---|---|---|---|
 | `success` | true | A success status from the definition was returned | `status`, `data`, `response` |
 | `http` | false | An error status, or a status not in the definition, was returned. Statuses not in the definition get `documented: false` and `error: unknown`. When other success statuses are defined, an undefined 2xx (such as 201 for an operation that only defines 200) also lands here | `status`, `error`, `documented`, `response` |
-| `network` | false | fetch itself failed (DNS, dropped connection, CORS, and so on) | `cause` |
-| `timeout` | false | The time given by `timeout` was exceeded | `cause` |
-| `aborted` | false | Aborted by the caller's `signal` | `cause` |
+| `network` | false | fetch itself failed (DNS, dropped connection, CORS, and so on), or the connection failed while the body was read | `cause`, and `response` when it ended the reading of the body |
+| `timeout` | false | The time given by `timeout` was exceeded | `cause`, and `response` as for `network` |
+| `aborted` | false | Aborted by the caller's `signal` | `cause`, and `response` as for `network` |
 | `parse` | false | Parsing the body failed, including when the Content-Type is not what was expected | `cause`, `response`, `contentType` |
 | `unexpected` | false | User code such as middleware threw an exception | `cause` |
 | `validation` | false | `validate` found issues in a success or documented error body (8.7) | `status`, `value`, `issues`, `response` |
@@ -477,8 +479,8 @@ Both runtimes bundle retries with the same defaults: `retry()` middleware in `@t
 
 All request and response conversion is done by `@tsurara/client` based on the OperationDef. Generated code contains no conversion logic. With the conversion logic in one place in the library, it can be tested as a whole.
 
-- Path and query: follow OpenAPI `style` (form, spaceDelimited, pipeDelimited, deepObject, and so on) and `explode`. A path parameter that is missing, or whose value would make a whole path segment empty, `.` or `..`, fails before sending (`kind: 'unexpected'`): URL parsing removes dot segments, so `id: '..'` in `/users/{id}/profile` would otherwise call `/profile`. Values are percent-encoded, `%` included, so a value such as `%2e` is sent as `%252e`. The path template must start with `/`: it is appended to the base URL as text, so `@evil.example/x` or `:8443/x` after `https://api.example.com` would change the host or the port. The model leaves out path keys without a leading `/` with an `invalid-definition` warning (webhook names and callback expressions are not paths), and every runtime refuses such an OperationDef before sending (`unexpected`).
-- Request body: JSON, `multipart/form-data`, `application/x-www-form-urlencoded`, and binary are supported. Multipart follows `encoding`: arrays are `append`ed per element, and objects are serialized with the given Content-Type.
+- Path and query: follow OpenAPI `style` (form, spaceDelimited, pipeDelimited, deepObject, and so on) and `explode`. A query parameter whose value is `null` is left out like a missing one (and so are `null` members of an `in: querystring` object): RFC 6570, which the styles come from, treats `null` as undefined, and `key=` would send an empty string the API may not accept. A path parameter that is missing, or whose value would make a whole path segment empty, `.` or `..`, fails before sending (`kind: 'unexpected'`): URL parsing removes dot segments, so `id: '..'` in `/users/{id}/profile` would otherwise call `/profile`. Values are percent-encoded, `%` included, so a value such as `%2e` is sent as `%252e`. The path template must start with `/`: it is appended to the base URL as text, so `@evil.example/x` or `:8443/x` after `https://api.example.com` would change the host or the port. The model leaves out path keys without a leading `/` with an `invalid-definition` warning (webhook names and callback expressions are not paths), and every runtime refuses such an OperationDef before sending (`unexpected`).
+- Request body: JSON, `multipart/form-data`, `application/x-www-form-urlencoded`, and binary are supported. Multipart follows `encoding`: arrays are `append`ed per element, and objects and arrays with an `encoding` Content-Type are sent as parts of that type. An object without one is sent as a field with its JSON text: `FormData` can give a part a Content-Type only by making it a file (with a file name), and servers such as PHP then take it for an upload. Every runtime sends it the same way.
 - Response: the generator decides `parseAs` from the media type and writes it into the OperationDef.
 
 The following table is checked from the top, and the first matching row decides.
@@ -490,7 +492,8 @@ The following table is checked from the top, and the first matching row decides.
 | 2a | JSON Lines (`application/jsonl`, `application/x-ndjson`) and JSON text sequences (`application/json-seq`) with an item schema | `jsonLines`, `jsonSeq` | `AsyncIterable<{P}Item>` |
 | 2b | Other sequential formats (the above without an item schema) | `stream` | `ReadableStream<Uint8Array>` |
 | 3 | `application/json`, `*/*+json` | `json` | The schema type in the JSON context (6.4). Even with `format: binary` or `contentMediaType` on `type: string`, it stays `string` and is not changed to `blob` |
-| 4 | String formats such as `text/*` | `text` | `string` |
+| 4 | String formats such as `text/*`, unless the schema is binary | `text` | `string`, decoded with the `charset` of the Content-Type (UTF-8 without one) |
+| 4a | `text/*` and the other string formats with a binary schema (6.4) | `blob` | `Blob`: the bytes as they arrive, for another charset or a file to pass on |
 | 5 | Wildcards such as `*/*` and `application/*`, with a binary schema (6.4: `format: binary`, or `contentMediaType` without `contentEncoding`) | `blob` | `Blob` |
 | 6 | Wildcards with a non-binary schema | `auto` | Schema type \| `string` \| `Blob` |
 | 7 | Anything else (`application/octet-stream`, images, and so on) | `blob` | `Blob` |
