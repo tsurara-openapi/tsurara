@@ -133,13 +133,17 @@ export const serializeQueryParam = (name: string, value: unknown, def: ParamDef 
   return [`${key}=${enc(toText(value))}`];
 };
 
-/** Builds the query string (without the leading `?`). */
+/**
+ * Builds the query string (without the leading `?`). Parameters whose value is `null` are left out,
+ * like missing ones: RFC 6570, which the parameter styles come from, treats `null` as undefined.
+ */
 export const buildQuery = (
   values: Record<string, unknown> | undefined,
   defs: ParamsDef['query'],
 ): string => {
   if (!values) return '';
   return entries(values)
+    .filter(([, v]) => v !== null)
     .flatMap(([name, v]) => serializeQueryParam(name, v, defs?.[name]))
     .join('&');
 };
@@ -149,6 +153,7 @@ export const buildQueryString = (value: unknown, contentType: string): string =>
   if (value === undefined) return '';
   if (/x-www-form-urlencoded/i.test(contentType) && isObject(value)) {
     return entries(value)
+      .filter(([, v]) => v !== null)
       .flatMap(([k, v]) => serializeQueryParam(k, v, { style: 'form', explode: true }))
       .join('&');
   }
@@ -224,9 +229,13 @@ const appendPart = (form: FormData, name: string, value: unknown, enc: EncodingD
   } else if (isReactNativeFile(value)) {
     // React Native's FormData uploads `{ uri, name, type }` as a file part.
     form.append(name, value as unknown as Blob);
-  } else if (isObject(value) || (Array.isArray(value) && enc?.contentType)) {
-    const type = enc?.contentType ?? 'application/json';
-    form.append(name, new Blob([JSON.stringify(value)], { type }));
+  } else if (enc?.contentType && (isObject(value) || Array.isArray(value))) {
+    form.append(name, new Blob([JSON.stringify(value)], { type: enc.contentType }));
+  } else if (isObject(value)) {
+    // A part with a Content-Type would have to be a Blob, which FormData sends as a file (with a
+    // file name); servers such as PHP then take it for an upload. Without an `encoding` that asks
+    // for a media type, an object is sent as a field with its JSON text.
+    form.append(name, JSON.stringify(value));
   } else if (enc?.contentType && /json/i.test(enc.contentType)) {
     form.append(name, new Blob([JSON.stringify(value)], { type: enc.contentType }));
   } else {

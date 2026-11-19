@@ -24,7 +24,7 @@ A call never rejects. It returns a Result:
 |---|---|---|
 | `success` | `true` | A success status of the definition; `data` has its type |
 | `http` | `false` | An error status, or a status the definition does not document (`documented: false`, `error: unknown`) |
-| `network` | `false` | `fetch` failed (DNS, connection, CORS) |
+| `network` | `false` | `fetch` failed (DNS, connection, CORS), or the connection failed while the body was read |
 | `timeout` | `false` | `timeout` passed |
 | `aborted` | `false` | The caller's `signal` aborted |
 | `parse` | `false` | The body does not match the definition (Content-Type, JSON) |
@@ -36,6 +36,10 @@ if (r.ok) render(r.data);
 else if (isHttpError(r, 404)) showNotFound(r.error); // the documented 404 body
 else report(r);
 ```
+
+When `network`, `timeout` or `aborted` ended the reading of the body, the Result keeps the `response`, so its status and headers are still known (`r.response?.status`); without a response, the failure came before one arrived.
+
+Text bodies (`text/*` and the like) are decoded with the `charset` of their Content-Type, UTF-8 without one; a charset the platform's `TextDecoder` does not know is a `parse` failure. A text media type whose schema is binary (`type: string, format: binary`) is read as a `Blob` instead, with its bytes as they arrive.
 
 Checking only `r.status === 404` does not narrow `r.error`, because the member for undocumented statuses has `status: number`; `isHttpError` also checks `documented`.
 
@@ -280,7 +284,33 @@ Retry in one place. TanStack Query retries a failed query three times by default
 
 ## Per-call options
 
-`signal`, `headers`, `timeout`, `baseUrl`, `context`, `validate`, and `contentType` (for operations with several request media types) can be given per call.
+`signal`, `headers`, `timeout`, `baseUrl`, `context`, `validate`, `fetchOptions`, and `contentType` (for operations with several request media types) can be given per call.
+
+`fetchOptions` are options of `fetch` itself, such as `cache`, `credentials`, `keepalive` or Next.js's `next`; the client has them too, and a call's are spread over the client's. The method, headers, body, signal and redirect handling stay the client's. Middleware sees them as `req.fetchOptions` and can replace them.
+
+```ts
+await getPet(api, {
+  path: { petId: 1 },
+  fetchOptions: { cache: 'force-cache', next: { revalidate: 60, tags: ['pet'] } },
+});
+```
+
+## The raw response
+
+`api.requestRaw(def, data)` sends a call as the generated function would (with the client's headers, auth and middleware), but returns the response with its body unread, to stream it on (a CSV or ZIP export) or to read it in a way the definition does not say. The generated `{operation}Def` describes the operation:
+
+```ts
+import { exportReportDef, type ExportReportData } from './api/operations/exportReport.js';
+
+const r = await api.requestRaw(exportReportDef, { query: { month: '2026-11' } } satisfies ExportReportData);
+if (r.kind === 'response' && r.ok) return new Response(r.response.body, { headers: r.response.headers });
+```
+
+The Result is `{ kind: 'response', ok, status, documented, response }`, where `ok` and `documented` are decided as for a call, or a transport failure. The `timeout` covers the call until the response arrives; the `signal` still cancels the reading of the body. `onResult` and `onUndocumentedStatus` are not called.
+
+## Multipart and query values
+
+A multipart part follows the `encoding` of the definition. An object without an `encoding` Content-Type is sent as a field with its JSON text; with one, it is sent as a part of that type, which `FormData` can only do as a file (with a file name). A query parameter, or a member of an `in: querystring` object, whose value is `null` is left out, like a missing one.
 
 ## A vendored runtime
 
@@ -296,7 +326,7 @@ runtime: vendor
 |---|---|---|
 | TypeScript | `_runtime/` | Generated files import it relatively; import `createClient` from `./api/_runtime/index.js` |
 | Python | `_runtime/` | `from api._runtime import Client`. Add httpx to your dependencies |
-| Rust | `runtime/` | Set `rust.runtimeCrate` to the module's path (`crate::api::runtime`), and add the crates `mod.rs` lists (serde, serde_json, indexmap; with operations also tokio, fastrand, httpdate and reqwest) |
+| Rust | `runtime/` | Set `rust.runtimeCrate` to the module's path (`crate::api::runtime`), and add the crates `mod.rs` lists (serde, serde_json, indexmap; with operations also tokio, fastrand, httpdate, encoding_rs and reqwest) |
 | Go | `internal/tsurara/` | The import path comes from your `go.mod` |
 
 The copy is regenerated with the code: it carries the generated-file marker, `tsurara check` reports edits to it, and it always matches the generator's version (there is no runtime version to check). `generate` prints the third-party dependencies to add.

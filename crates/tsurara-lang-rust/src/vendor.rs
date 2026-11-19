@@ -21,6 +21,7 @@ pub fn dependencies(client: bool) -> Vec<&'static str> {
             r#"tokio = { version = "1", features = ["time"] }"#,
             r#"fastrand = "2""#,
             r#"httpdate = "1""#,
+            r#"encoding_rs = "0.8.35""#,
             r#"reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }"#,
         ]);
     }

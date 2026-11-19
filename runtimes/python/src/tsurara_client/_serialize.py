@@ -162,15 +162,21 @@ def serialize_query_param(name: str, value: Any, d: ParamDef) -> list[str]:
 
 
 def build_query(values: Mapping[str, Any] | None, defs: Mapping[str, ParamDef]) -> str:
+    """The query string. `None` values are left out: RFC 6570, which the styles come from, treats
+    null as undefined."""
     if not values:
         return ""
-    return "&".join(p for name, v in values.items() for p in serialize_query_param(name, v, defs.get(name, {})))
+    return "&".join(
+        p for name, v in values.items() if v is not None for p in serialize_query_param(name, v, defs.get(name, {}))
+    )
 
 
 def build_query_string(value: Any, content_type: str) -> str:
     """`in: querystring` (3.2): the whole query string as one value."""
     if "x-www-form-urlencoded" in content_type.lower() and _is_object(value):
-        return "&".join(p for k, v in _entries(value) for p in serialize_query_param(k, v, {"style": "form", "explode": True}))
+        return "&".join(
+            p for k, v in _entries(value) if v is not None for p in serialize_query_param(k, v, {"style": "form", "explode": True})
+        )
     return _component(_content_value(value, content_type))
 
 
@@ -251,8 +257,12 @@ def _multipart(value: Any, encoding: Mapping[str, EncodingDef]) -> EncodedBody:
             part(name, v.content, v.content_type or "application/octet-stream", v.filename)
         elif _is_binary(v):
             part(name, _binary(v)[0], "application/octet-stream")
-        elif _is_object(v) or (isinstance(v, list | tuple) and enc and "contentType" in enc):
-            part(name, json_text(v).encode(), (enc or {}).get("contentType", "application/json"))
+        elif enc and "contentType" in enc and (_is_object(v) or isinstance(v, list | tuple)):
+            part(name, json_text(v).encode(), enc["contentType"])
+        elif _is_object(v):
+            # A field with the JSON text, as the TypeScript runtime sends it (FormData can only give
+            # a part a Content-Type by making it a file).
+            part(name, json_text(v).encode())
         elif enc and "contentType" in enc and "json" in enc["contentType"].lower():
             part(name, json_text(v).encode(), enc["contentType"])
         else:

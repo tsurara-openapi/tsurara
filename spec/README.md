@@ -6,7 +6,7 @@ Generated code in every language is thin: it describes each operation and passes
 |---|---|
 | OperationDef format | `operation-def.schema.json` (JSON Schema, version 1) |
 | Result kinds | Below |
-| Serialization and parsing | design.md 8.5, made precise by the vectors in `conformance/`. A request whose path template does not start with `/`, whose path parameter is missing, or whose expanded value makes a whole segment empty, `.` or `..`, is not sent and returns `unexpected` |
+| Serialization and parsing | design.md 8.5, made precise by the vectors in `conformance/`. Query parameters (and members of an `in: querystring` object) whose value is `null` are left out. A multipart object without an `encoding` Content-Type is a field with its JSON text. Text bodies are decoded with the `charset` of their Content-Type, UTF-8 without one (Go keeps the bytes of a `string` as they arrive, since its standard library has no other charsets). A request whose path template does not start with `/`, whose path parameter is missing, or whose expanded value makes a whole segment empty, `.` or `..`, is not sent and returns `unexpected` |
 | Runtime capabilities | Below |
 | TypeDef format | `type-def.schema.json` (version 1), for runtimes that convert values with TypeDefs |
 | Conformance vectors | `conformance/` ([format](conformance/README.md)) |
@@ -31,9 +31,9 @@ A request never fails with an exception or a rejected promise for the outcomes b
 |---|---|---|---|
 | `success` | yes | A success status of the definition was returned. A `default` response counts as success only when no other success status is defined | status, data, the raw response |
 | `http` | no | An error status, or a status not in the definition. `documented` tells which; undocumented bodies are read as JSON if possible, otherwise as text | status, error, documented, the raw response |
-| `network` | no | The transport failed (DNS, connection, CORS, and so on) | cause |
-| `timeout` | no | The client's timeout was exceeded, over all attempts | cause |
-| `aborted` | no | The caller cancelled | cause |
+| `network` | no | The transport failed (DNS, connection, CORS, and so on), also while the body was read | cause; a runtime may also carry the raw response when the failure ended the reading of its body (`@tsurara/client` does) |
+| `timeout` | no | The client's timeout was exceeded, over all attempts | cause, and the raw response as for `network` |
+| `aborted` | no | The caller cancelled | cause, and the raw response as for `network` |
 | `parse` | no | The body could not be read as the definition says, including a Content-Type that does not match | cause, the raw response, content type |
 | `unexpected` | no | User code (middleware, hooks) failed, or the input cannot be sent (for example a binary value as a JSON body) | cause |
 | `validation` | no | Reserved; not returned yet | — |

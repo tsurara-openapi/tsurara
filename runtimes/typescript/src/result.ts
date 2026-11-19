@@ -1,10 +1,14 @@
 import type { ValidationIssue } from './validate.ts';
 
-/** Failures before HTTP, and exceptions from user code. Included in every operation's Result. */
+/**
+ * Failures before HTTP, and exceptions from user code. Included in every operation's Result.
+ * `network`, `timeout` and `aborted` carry the response when they ended the reading of its body
+ * (its body is then unusable, but its status and headers are known).
+ */
 export type TransportFailure =
-  | { ok: false; kind: 'network'; cause: unknown }
-  | { ok: false; kind: 'timeout'; cause: unknown }
-  | { ok: false; kind: 'aborted'; cause: unknown }
+  | { ok: false; kind: 'network'; cause: unknown; response?: Response }
+  | { ok: false; kind: 'timeout'; cause: unknown; response?: Response }
+  | { ok: false; kind: 'aborted'; cause: unknown; response?: Response }
   | {
       ok: false;
       kind: 'parse';
@@ -45,3 +49,12 @@ export type HttpErrorResult = {
 export type AnyResult = SuccessResult | HttpErrorResult | TransportFailure;
 
 export type ResultKind = AnyResult['kind'];
+
+/**
+ * The result of `client.requestRaw`: the response with its body unread, or a transport failure.
+ * `ok` and `documented` are decided as for `request`: whether the status is a success status of the
+ * definition, and whether the definition lists it.
+ */
+export type RawResult =
+  | { ok: boolean; kind: 'response'; status: number; documented: boolean; response: Response }
+  | TransportFailure;

@@ -11,7 +11,7 @@ import { readEvents } from './events.ts';
 import { readJsonItems } from './items.ts';
 import { anySignal, isInstance, timeoutReason } from './platform.ts';
 import type { QueryScope } from './query.ts';
-import type { AnyResult, TransportFailure } from './result.ts';
+import type { AnyResult, RawResult, TransportFailure } from './result.ts';
 import {
   buildCookie,
   buildQuery,
@@ -21,6 +21,12 @@ import {
   serializeHeaderParam,
 } from './serialize.ts';
 import type { Validator } from './validate.ts';
+
+/**
+ * Options of `fetch` that tsurara passes through, such as `cache`, `credentials` or Next.js's
+ * `next`. The method, headers, body, signal and redirect handling are the client's.
+ */
+export type FetchOptions = Omit<RequestInit, 'method' | 'headers' | 'body' | 'signal' | 'redirect'>;
 
 /** Header value. Headers with `undefined` are not sent. */
 export type HeaderValues = Headers | { readonly [name: string]: unknown };
@@ -36,6 +42,8 @@ export type RequestOptions<Ctx = unknown> = {
   contentType?: string | undefined;
   /** Validation for this call: another validator, or `false` to turn the client's off. */
   validate?: Validator | false | undefined;
+  /** Options of `fetch` for this call, over those of the client. */
+  fetchOptions?: FetchOptions | undefined;
 };
 
 /** Value received by `client.request`. The generated `Data` type combined with `RequestOptions`. */
@@ -55,6 +63,8 @@ export type MiddlewareRequest<Ctx = unknown> = {
   method: string;
   headers: Headers;
   body: BodyInit | null;
+  /** Options of `fetch` (the client's with the call's over them). */
+  fetchOptions: FetchOptions;
   readonly signal: AbortSignal;
   /** When the client's timeout ends (milliseconds since the epoch), if there is one. */
   readonly deadline?: number | undefined;
@@ -108,6 +118,8 @@ export type ClientOptions<Ctx = unknown> = {
    */
   onUndocumentedStatus?: ((info: UndocumentedStatusInfo<Ctx>) => void | Promise<void>) | undefined;
   fetch?: ((input: URL | Request | string, init?: RequestInit) => Promise<Response>) | undefined;
+  /** Options of `fetch` for every call, such as `cache` or `credentials`. */
+  fetchOptions?: FetchOptions | undefined;
   timeout?: number | undefined;
   /**
    * Validates success and documented error bodies parsed as JSON; a body with issues becomes a
@@ -126,6 +138,13 @@ export type Client<Ctx = unknown> = {
   readonly options: Readonly<ClientOptions<Ctx>>;
   /** Calls an operation. The returned Promise never rejects. */
   request<R = AnyResult>(def: OperationDef, input?: RequestInput<Ctx>): Promise<R>;
+  /**
+   * Calls an operation like `request`, but returns the response with its body unread, to read it
+   * as the caller needs (`response.body` to stream it, `arrayBuffer()` to decode it). The timeout
+   * covers the call until the response arrives; the signal still cancels the reading of the body.
+   * `onResult` and `onUndocumentedStatus` are not called. The returned Promise never rejects.
+   */
+  requestRaw(def: OperationDef, input?: RequestInput<Ctx>): Promise<RawResult>;
 };
 
 /** A failure in fetch or further inside. Passes through middleware and becomes a Result on the outside. */
@@ -198,6 +217,39 @@ const guessParseAs = (response: Response): ParseAs => {
 
 class ParseFailure extends Error {}
 
+/** The body could not be read to its end: the connection failed, or the signal ended it. */
+class ReadFailure extends Error {
+  readonly response: Response;
+  constructor(cause: unknown, response: Response) {
+    super('tsurara: the response body could not be read', { cause });
+    this.response = response;
+  }
+}
+
+/** The `charset` parameter of a Content-Type, in lower case. */
+const charsetOf = (header: string | null): string | undefined => {
+  const match = /;\s*charset\s*=\s*(?:"([^"]*)"|([^;\s]*))/i.exec(header ?? '');
+  const charset = (match?.[1] ?? match?.[2])?.trim().toLowerCase();
+  return charset === '' ? undefined : charset;
+};
+
+/** Reads a text body with the charset of its Content-Type (`response.text()` always reads UTF-8). */
+const readText = async (response: Response): Promise<string> => {
+  const charset = charsetOf(response.headers.get('content-type'));
+  if (charset === undefined || charset === 'utf-8' || charset === 'utf8') return response.text();
+  let decoder: TextDecoder;
+  try {
+    decoder = new TextDecoder(charset);
+  } catch (e) {
+    await response.body?.cancel();
+    throw new ParseFailure(
+      `the response has charset ${charset}, which this platform's TextDecoder cannot decode`,
+      { cause: e },
+    );
+  }
+  return decoder.decode(await response.arrayBuffer());
+};
+
 const readBody = async (
   response: Response,
   parseAs: ParseAs,
@@ -208,7 +260,7 @@ const readBody = async (
       await response.body?.cancel();
       return undefined;
     case 'text':
-      return response.text();
+      return readText(response);
     case 'blob':
       return response.blob();
     case 'stream':
@@ -272,22 +324,29 @@ const toResult = async (
   operation: OperationInfo,
 ): Promise<AnyResult> => {
   const status = response.status;
-  const found = findResponse(def, status);
+  const { found, success, documented } = classifyStatus(def, status);
   const contentType = response.headers.get('content-type');
   const mt = mediaType(contentType);
+  /** Reads the body; a failure that is not about its contents keeps the response. */
+  const read = async (body: () => Promise<unknown>): Promise<unknown> => {
+    try {
+      return await body();
+    } catch (cause) {
+      if (cause instanceof ParseFailure || cause instanceof SyntaxError) throw cause;
+      throw new ReadFailure(cause, response);
+    }
+  };
   /** The body, and whether it was read as JSON. */
   const parse = async (entry: ResponseDef): Promise<[unknown, boolean]> => {
     const parseAs = entry.contentTypes?.[mt] ?? entry.parseAs;
     const json = parseAs === 'json' || (parseAs === 'auto' && guessParseAs(response) === 'json');
-    return [await readBody(response, parseAs, entry), json];
+    return [await read(() => readBody(response, parseAs, entry)), json];
   };
   /** The issues of a JSON body, if the client validates. */
   const check = async (value: unknown, json: boolean) =>
     json && validate ? validate(value, { operation, status, mediaType: mt }) : undefined;
-  const isDefault = found?.key === 'default';
-  const success = status < 400 && found !== undefined && (!isDefault || !hasSuccessEntry(def));
   try {
-    if (found && (success || status >= 400)) {
+    if (found && documented) {
       const [value, json] = await parse(found.entry);
       const issues = await check(value, json);
       if (issues && issues.length > 0) {
@@ -301,7 +360,7 @@ const toResult = async (
       kind: 'http',
       documented: false,
       status,
-      error: await readUndocumented(response),
+      error: await read(() => readUndocumented(response)),
       response,
     };
   } catch (cause) {
@@ -312,10 +371,31 @@ const toResult = async (
   }
 };
 
-const failure = (kind: TransportFailure['kind'], cause: unknown): TransportFailure =>
-  kind === 'parse' || kind === 'validation'
-    ? { ok: false, kind: 'unexpected', cause }
-    : { ok: false, kind, cause };
+const failure = (
+  kind: TransportFailure['kind'],
+  cause: unknown,
+  response?: Response,
+): TransportFailure => {
+  if (kind === 'parse' || kind === 'validation' || kind === 'unexpected') {
+    return { ok: false, kind: 'unexpected', cause };
+  }
+  return response ? { ok: false, kind, cause, response } : { ok: false, kind, cause };
+};
+
+/** Whether a status is a success of the definition, and whether the definition documents it. */
+const classifyStatus = (
+  def: OperationDef,
+  status: number,
+): {
+  found: { entry: ResponseDef; key: string } | undefined;
+  success: boolean;
+  documented: boolean;
+} => {
+  const found = findResponse(def, status);
+  const isDefault = found?.key === 'default';
+  const success = status < 400 && found !== undefined && (!isDefault || !hasSuccessEntry(def));
+  return { found, success, documented: found !== undefined && (success || status >= 400) };
+};
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 
@@ -336,7 +416,13 @@ export const createClient = <Ctx = unknown>(options: ClientOptions<Ctx>): Client
     let body = req.body;
     const headers = new Headers(req.headers);
     for (let redirects = 0; ; redirects++) {
-      const init: RequestInit & { duplex?: 'half' } = { method, headers, body, signal: req.signal };
+      const init: RequestInit & { duplex?: 'half' } = {
+        ...req.fetchOptions,
+        method,
+        headers,
+        body,
+        signal: req.signal,
+      };
       if (manual) init.redirect = 'manual';
       if (isInstance(body, 'ReadableStream')) init.duplex = 'half';
       let res: Response;
@@ -367,7 +453,14 @@ export const createClient = <Ctx = unknown>(options: ClientOptions<Ctx>): Client
     }
   };
 
-  const run = async (def: OperationDef, input: RequestInput<Ctx>): Promise<AnyResult> => {
+  /** Sends the request and reads the response into a Result, or with `raw` leaves its body unread. */
+  async function run(def: OperationDef, input: RequestInput<Ctx>, raw: false): Promise<AnyResult>;
+  async function run(def: OperationDef, input: RequestInput<Ctx>, raw: true): Promise<RawResult>;
+  async function run(
+    def: OperationDef,
+    input: RequestInput<Ctx>,
+    raw: boolean,
+  ): Promise<AnyResult | RawResult> {
     const op = info(def);
     const reqInfo: RequestInfo<Ctx> = { operation: op, context: input.context };
     if (def.v !== OPERATION_DEF_VERSION) {
@@ -390,10 +483,15 @@ export const createClient = <Ctx = unknown>(options: ClientOptions<Ctx>): Client
     const signal = userSignal
       ? anySignal([userSignal, timeoutController.signal])
       : timeoutController.signal;
-    const classify = (cause: unknown): AnyResult => {
-      if (userSignal?.aborted) return failure('aborted', userSignal.reason ?? cause);
-      if (timeoutController.signal.aborted) return failure('timeout', cause);
-      if (cause instanceof TransportError) return failure(cause.kind, cause.cause);
+    const classify = (thrown: unknown): AnyResult => {
+      // A failure while the body was read keeps the response; it is a network failure unless the
+      // signal ended it.
+      const response = thrown instanceof ReadFailure ? thrown.response : undefined;
+      const cause = thrown instanceof ReadFailure ? thrown.cause : thrown;
+      if (userSignal?.aborted) return failure('aborted', userSignal.reason ?? cause, response);
+      if (timeoutController.signal.aborted) return failure('timeout', cause, response);
+      if (cause instanceof TransportError) return failure(cause.kind, cause.cause, response);
+      if (response) return failure('network', cause, response);
       return failure('unexpected', cause);
     };
     try {
@@ -456,6 +554,7 @@ export const createClient = <Ctx = unknown>(options: ClientOptions<Ctx>): Client
         method: def.method.toUpperCase(),
         headers,
         body,
+        fetchOptions: { ...options.fetchOptions, ...input.fetchOptions },
         signal,
         deadline,
       };
@@ -463,6 +562,10 @@ export const createClient = <Ctx = unknown>(options: ClientOptions<Ctx>): Client
       if (signal.aborted) return classify(signal.reason);
       const chain = middleware.reduceRight<Next<Ctx>>((next, mw) => (r) => mw(r, next), send);
       const response = await chain(req);
+      if (raw) {
+        const { success, documented } = classifyStatus(def, response.status);
+        return { ok: success, kind: 'response', status: response.status, documented, response };
+      }
       const validate = input.validate === false ? undefined : (input.validate ?? options.validate);
       return await toResult(def, response, validate, op);
     } catch (cause) {
@@ -470,12 +573,15 @@ export const createClient = <Ctx = unknown>(options: ClientOptions<Ctx>): Client
     } finally {
       if (timer !== undefined) clearTimeout(timer);
     }
-  };
+  }
 
   return {
     options,
+    requestRaw(def: OperationDef, input: RequestInput<Ctx> = {}): Promise<RawResult> {
+      return run(def, input, true);
+    },
     async request<R = AnyResult>(def: OperationDef, input: RequestInput<Ctx> = {}): Promise<R> {
-      const result = await run(def, input);
+      const result = await run(def, input, false);
       operations.set(result, info(def));
       if (options.onUndocumentedStatus && result.kind === 'http' && !result.documented) {
         try {
