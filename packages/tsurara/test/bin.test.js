@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
@@ -85,4 +85,32 @@ test('writes a platform package around a binary', async () => {
     assert.equal((await stat(join(out, 'bin', 'tsurara.exe'))).mode & 0o777, 0o755);
   }
   assert.equal(await readFile(join(out, 'LICENSE'), 'utf8'), 'binary');
+});
+
+test('makes the binary of the platform package executable when it is not', async (t) => {
+  const platform = platformPackage(process.platform, process.arch);
+  if (process.platform === 'win32' || platform === undefined) {
+    t.skip('needs a POSIX platform with a platform package');
+    return;
+  }
+  // A copy of the package next to a platform package whose binary lost its executable bit, as
+  // the binaries of 0.1.0 were published.
+  const dir = await mkdtemp(join(tmpdir(), 'tsurara-npm-'));
+  await cp(join(root, 'bin'), join(dir, 'tsurara', 'bin'), { recursive: true });
+  await cp(join(root, 'lib'), join(dir, 'tsurara', 'lib'), { recursive: true });
+  await writeFile(join(dir, 'tsurara', 'package.json'), JSON.stringify({ type: 'module' }));
+  const pkg = join(dir, 'tsurara', 'node_modules', ...platform.name.split('/'));
+  await mkdir(join(pkg, 'bin'), { recursive: true });
+  await writeFile(join(pkg, 'package.json'), JSON.stringify({ name: platform.name }));
+  const binary = join(pkg, 'bin', platform.binary);
+  await writeFile(binary, '#!/bin/sh\necho "ran $1"\n');
+  await chmod(binary, 0o644);
+  const result = spawnSync(process.execPath, [join(dir, 'tsurara', 'bin', 'tsurara.js'), 'x'], {
+    encoding: 'utf8',
+    env: { ...process.env, TSURARA_BINARY: '' },
+  });
+  assert.equal(result.stderr, '');
+  assert.equal(result.stdout, 'ran x\n');
+  assert.equal(result.status, 0);
+  assert.equal((await stat(binary)).mode & 0o777, 0o755);
 });
