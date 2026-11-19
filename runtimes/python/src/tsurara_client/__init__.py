@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from ._retry import Retry, retry_after
     from ._unwrap import ApiError, unwrap
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 _CLIENT: dict[str, str] = {
     "AsyncClient": "._client",
