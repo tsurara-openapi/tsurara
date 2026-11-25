@@ -13,7 +13,7 @@
     "abort-controller": "3.0.0",
     "babel-preset-rn075": "npm:@react-native/babel-preset@0.75.5",
     "esbuild": "0.28.2",
-    "hermes-compiler": "260318099.0.7",
+    "hermes-compiler": "260318099.0.8",
     "typescript": "7.0.2",
     "whatwg-fetch": "3.6.20"
   }
