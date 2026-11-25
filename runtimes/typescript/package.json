@@ -32,7 +32,7 @@
     "test": "pnpm run typecheck && node --test 'test/**/*.test.ts'"
   },
   "devDependencies": {
-    "@tanstack/query-core": "5.107.1",
+    "@tanstack/query-core": "5.108.1",
     "@types/node": "^22.19.0",
     "typescript": "7.0.2",
     "valibot": "1.5.0"
